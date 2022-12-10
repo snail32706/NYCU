@@ -12,6 +12,7 @@ import pandas as pd
 from IPython.display import display, Math, Latex
 
 
+
 def read_file(file_name):
     
     '''
@@ -36,6 +37,18 @@ def myerf(x, a, k, x0, y0):
     
     return a * erf(k * (x - x0)) + y0
 
+def gauss(x, μ, σ, A, y0):            
+    return y0 + A * np.exp(-(x-μ)**2/2/σ**2) 
+
+def Differential_array(x, y):
+
+    dy = []
+    for i, val in enumerate(y):
+        if i != 0:
+            a = (val - y[i-1])/(x[i] - x[i-1])
+            dy.append(a)
+    x = np.delete(x, 0)
+    return x, dy
 
 
 def plt_xy(x, y, A):
@@ -65,6 +78,33 @@ def fit_error(xdat, ydat, mid_x):
 
     return popt
 
+def fit_gauss():
+    
+    '''
+    微分後 fit
+    '''
+    x_new, y_new, data_list = skip_noise()
+    x, dy = Differential_array(x_new, y_new)
+
+    mid_ofx, xpeaks = Find_thepeak(x_new, y_new, 3) # 可刪
+
+    # p0=[0.023, 80.0, mid_x, data_list[0]]
+    # popt, pcov = curve_fit(gauss, xdat, ydat, p0, method="lm")
+    # perr = np.sqrt(np.diag(pcov)) * 4.0
+    # σ = np.sqrt(np.diag(pcov))        
+    # a = pd.DataFrame(data={'params':popt,'σ':σ}, index = myerf.__code__.co_varnames[1:])      
+    # display(a)  
+
+    fig = plt.figure(figsize=(6, 4), dpi=100)
+    ax1 = fig.add_subplot(111)
+    ax1.plot(x, dy, 'b.',markersize = 4)
+    x_c = float(mid_ofx[0])
+    ax1.set_xlim(x_c-0.1, x_c+0.1)
+    # ax1.plot(x, y, 'b.',markersize = 4)
+    plt.show()
+
+    return 
+
 def skip_noise():
     
     '''
@@ -75,7 +115,8 @@ def skip_noise():
     Using noise range (noise_bottom ~ noise_top) skip the noise data.
     '''
     # load file
-    xdat, ydat = read_file('100--1-21-05-57-11212022.txt')
+    # xdat, ydat = read_file('100--1-21-05-57-11212022.txt')
+    xdat, ydat = read_file("景貴刀口微分.txt")
     
     # First step:
     
@@ -254,7 +295,7 @@ def data_split_and_fit(N):
     return D_1, D_2, mid_ofx
 # D_1, D_2, mid_ofx = data_split_and_fit(3)
 
-def plt_fitting():
+def plt_error_fit():
     
     D_1, D_2, mid_ofx = data_split_and_fit(3)
 
@@ -279,10 +320,36 @@ def plt_fitting():
             # print(a, k, x0, y0)
     plt.show()
 
-plt_fitting()
+def plt_gauss_fit():
+    
+    D_1, D_2, mid_ofx = data_split_and_fit(3)
+
+    fig = plt.figure(figsize=(10, 4), dpi=100)
+    ax1 = fig.add_subplot(111)
+    ax1.plot(x_new, y_new, 'b.',markersize = 5)
+    ax1.set_xlabel("time (ms)")
+    ax1.set_ylabel("signal (a.u.)")
+    
+    c = ['#B22222', '#CD9B1D', '#FF7D40', '#FFC125', '#FF3030', '#FFC125'] # color code for fit diff curve
+    if len(mid_ofx) == 1:
+        p = fit_error(x_new, y_new, mid_ofx[0])
+        a, k, x0, y0 = p[0], p[1], p[2], p[3]
+        ax1.plot(x_new, myerf(x_new, a, k, x0, y0), color=c[0] , linewidth=5, alpha=0.5)
+    else:    
+        for i, val in enumerate(mid_ofx):
+            p = fit_error(D_1[i], D_2[i], val)
+
+            a, k, x0, y0 = p[0], p[1], p[2], p[3]
+            ax1.plot(D_1[i], myerf(D_1[i], a, k, x0, y0), color=c[i] , linewidth=5, alpha=0.5)
+            # F.append(p)
+            # print(a, k, x0, y0)
+    plt.show()
+
+# plt_error_fit()
+# fit_gauss()
 
 
-
+# Differential_array(x_new, y_new)
 
 
 
