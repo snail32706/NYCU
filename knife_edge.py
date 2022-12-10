@@ -116,8 +116,9 @@ def skip_noise():
     '''
     # load file
     # xdat, ydat = read_file('100--1-21-05-57-11212022.txt')
-    xdat, ydat = read_file("景貴刀口微分.txt")
-    
+    xdat, ydat = read_file("景貴刀口微分.txt") # 刪除
+    plt_xy(xdat, ydat, '.')
+
     # First step:
     
     counts, dis = np.histogram(ydat, bins= 10)    
