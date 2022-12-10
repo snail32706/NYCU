@@ -4,7 +4,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 plt.style.use('ggplot')
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
-
+import pandas as pd
+from IPython.display import display, Math, Latex
 import matplotlib.pyplot as plt
 from scipy.special import erf
 from scipy.optimize import curve_fit
@@ -12,9 +13,11 @@ from scipy.signal import find_peaks
 
 # file_path_bytk = None
 xdat_row, ydat_row = None, None
+
 def open_file(): 
     '''
     *** load data is the first step. ***
+    use tkinter
     '''
     filetypes = ( ('text files', '*.txt'), ('All files', '*.*') )
     # global file_path_bytk
@@ -82,13 +85,13 @@ def fit_error(xdat, ydat, mid_x):
     p0=[0.023, 80.0, mid_x, data_list[0]]
     popt, pcov = curve_fit(myerf, xdat, ydat, p0, method="lm")
     perr = np.sqrt(np.diag(pcov)) * 4.0
-#     σ = np.sqrt(np.diag(pcov))        
-#     a = pd.DataFrame(data={'params':popt,'σ':σ}, index = myerf.__code__.co_varnames[1:])      
-#     display(a)   
+    # σ = np.sqrt(np.diag(pcov))        
+    # a = pd.DataFrame(data={'params':popt,'σ':σ}, index = myerf.__code__.co_varnames[1:])      
+    # display(a)   
 
     return popt
 
-def skip_noise():
+def skip_noise(xdat, ydat):
     
     '''
     First:
@@ -97,8 +100,6 @@ def skip_noise():
     Second:
     Using noise range (noise_bottom ~ noise_top) skip the noise data.
     '''
-    # load file
-    xdat, ydat = xdat_row, ydat_row 
 
     # First step:
     
@@ -146,12 +147,13 @@ def skip_noise():
             xx.append(xdat[i])
             yy.append(ydat[i]) 
     return xx, yy, data_list  
-# x_new, y_new, data_list = skip_noise()
+# x_new, y_new, data_list = skip_noise(xdat_row ,ydat_row)
 
 def gradient(x, y, N):
     
     '''
     average every N points.
+
     Gral: find the fitting point. 
     return the mid of error func x position.
     
@@ -266,6 +268,7 @@ def data_split_and_fit(N):
 
 '''
 kife_edge.py end
+
 '''
 x_new, y_new, data_list = None, None, None
 D_1, D_2, mid_ofx, xpeaks, ave_x, y_grad = None, None, None, None, None, None
@@ -276,18 +279,23 @@ def B0f():
     '''
     global xdat_row, ydat_row, x_new, y_new, data_list, D_1, D_2, mid_ofx, xpeaks, ave_x, y_grad 
     xdat_row, ydat_row = open_file()
-    x_new, y_new, data_list = skip_noise()
+    x_new, y_new, data_list = skip_noise(xdat_row, ydat_row)    
     D_1, D_2, mid_ofx, xpeaks, ave_x, y_grad = data_split_and_fit(3) # 改變平均值
     ax.clear()
     ax.set_xlabel("time (ms)")
     ax.set_ylabel("signal (a.u.)")
     ax.plot(xdat_row, ydat_row, 'b.',markersize = 4), ax.grid(True)
     line.draw() 
+    if xpeaks is not None:
+        l = tk.Label(root, fg='#FFDC00', font=("Arial", 18),
+        text = f'Load Success!')
+        l.place(relx=0.02, rely=0.59, relwidth=0.16, relheight=0.39)
 
 def B1f():
     '''
     show processing data
     '''
+    # x_new, y_new, data_list = skip_noise(xdat_row, ydat_row)    
     ax.clear()
     ax.set_xlabel("time (ms)")
     ax.set_ylabel("signal (a.u.)")
@@ -298,6 +306,7 @@ def B2f():
     '''
     show gradient and peaks.
     '''
+
     ax.clear()
     ax.set_xlabel("time (ms)")
     ax.set_ylabel("signal (a.u.)")
@@ -313,19 +322,25 @@ def B3f():
     ax.plot(x_new, y_new, 'b.',markersize = 5)
     ax.set_xlabel("time (ms)")
     ax.set_ylabel("signal (a.u.)")
-    ax.set_title("fit: a * erf(k * (x - x0)) + c")
-    c = ['#B22222', '#CD9B1D', '#FF7D40', '#FFC125', '#FF3030', '#FFC125', '#B22222', '#CD9B1D', '#FF7D40', '#FFC125', '#FF3030', '#FFC125'] # color code for fit diff curve
+    ax.set_title("fit: a * erf(k * (x - x0)) + y0")
+    c = ['#B22222', '#CD9B1D', '#FF7D40', '#FFC125', '#FF3030', '#FFC125', 
+        '#B22222', '#CD9B1D', '#FF7D40', '#FFC125', '#FF3030', '#FFC125'] # color code for fit diff curve
     if len(mid_ofx) == 1:
             p = fit_error(x_new, y_new, mid_ofx[0])
             a, k, x0, y0 = p[0], p[1], p[2], p[3]
-            ax.plot(x_new, myerf(x_new, a, k, x0, y0), color=c[0] , linewidth=8, alpha=0.5)
+            ax.plot(x_new, myerf(x_new, a, k, x0, y0), color=c[0], linewidth=8, alpha=0.5)
     else:    
         for i, val in enumerate(mid_ofx):
             p = fit_error(D_1[i], D_2[i], val)
-
             a, k, x0, y0 = p[0], p[1], p[2], p[3]
             ax.plot(D_1[i], myerf(D_1[i], a, k, x0, y0), color=c[i] , linewidth=8, alpha=0.5)
     line.draw()  
+    if p is not None:
+        enter = '\n'
+        r = tk.Label(root, bg='#C6C6C6', fg='#000000', font=("Arial", 15),
+                    text = f'G')
+        r.place(relx=0.2, rely=0.78, relwidth=0.78, relheight=0.2)
+
 
 def B4f():
     ax.clear()
@@ -349,9 +364,11 @@ root.title("Error Func Fitting")
 Frame:
     bd:     指標周圍邊框的大小
     height: The vertical dimension of the new frame.
+
 place:
     Place 是幾何管理器是 Tkinter 中提供的三個通用幾何管理器中最簡單的一個。
     它允許您明確設置窗口的位置和大小，無論是絕對值還是相對於另一個窗口。
+
     relheight, relwidth: 高度和寬度作為 0.0 和 1.0 之間的浮點數
     relx, rely: 水平和垂直偏移量作為 0.0 和 1.0 之間的浮點數，作為父部件高度和寬度的一部分。
 '''
@@ -362,12 +379,19 @@ left_frame.place(relx=0.02, rely=0.02, relwidth=0.16, relheight=0.55)
 right_frame = tk.Frame(root, bg='#C0C0C0') 
 right_frame.place(relx=0.2, rely=0.02, relwidth=0.78, relheight=0.72)
 
-ld_frame = tk.Frame(root, bg='#FFEBA4')
-ld_frame.place(relx=0.02, rely=0.59, relwidth=0.16, relheight=0.39)
+# ld_frame = tk.Frame(root, bg='#FFEBA4')
+# ld_frame.place(relx=0.02, rely=0.59, relwidth=0.16, relheight=0.39)
 
-rd_frame = tk.Frame(root, bg='#C6C6C6')
-rd_frame.place(relx=0.2, rely=0.78, relwidth=0.78, relheight=0.2)
+l = tk.Label(root, fg='#FF0000', font=("Arial", 15),
+text = f'Plz load data first!')
+l.place(relx=0.02, rely=0.59, relwidth=0.16, relheight=0.39)
 
+r = tk.Label(root, bg='#C6C6C6', fg='#000000', font=("Arial", 15))
+r.place(relx=0.2, rely=0.78, relwidth=0.78, relheight=0.2)
+
+# rd_frame = tk.Frame(root, bg='#C6C6C6')
+# rd_frame.place(relx=0.2, rely=0.78, relwidth=0.78, relheight=0.2)
+# tk.Label
 
 #---------------
 
@@ -399,3 +423,6 @@ line.get_tk_widget().pack(side=tk.LEFT, fill=tk.BOTH,expand=1)
 #----------------------
 
 root.mainloop()
+
+
+
