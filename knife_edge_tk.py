@@ -19,9 +19,9 @@ def open_file():
     *** load data is the first step. ***
     use tkinter
     '''
+    global speed, z_component
     filetypes = ( ('text files', '*.txt'), ('All files', '*.*') )
     # global file_path_bytk
-    # file = tk.filedialog.askopenfile(mode='r', filetypes=[('Python Files', '*.py')])
     file = tk.filedialog.askopenfile(
                             title='Open a file',
                             initialdir='/Users/k.y.chen/Desktop/', 
@@ -32,10 +32,35 @@ def open_file():
         # file_path_bytk = str(file_path_bytk)
         # type(file_path_bytk) is str
 
+    speed, z_component = found_name(file)
+
     rawdat = np.loadtxt(file_path_bytk, delimiter='\t')  
-    xdat = rawdat[:,0]
+    xdat = rawdat[:,0]  
     ydat = rawdat[:,1]  
-    return xdat, ydat
+    
+    return xdat, ydat, speed, z_component
+
+def found_name(file):
+    '''
+    Use split to found file name.
+    than get the speed & z component.
+    '''
+    file_name_all = str(file)
+
+    for i in file_name_all.split('/'):
+        if 'txt' in i:
+            file_name, _ = i.split('txt')
+            
+    if file_name[0] != 's':
+        # print('Name Error! \nFile name should be: \n\ts100_z10_ ...')
+        return None, None
+    else:
+        for i, word in enumerate( file_name.split('_') ):
+            if i == 0 and word[0] == 's':
+                _, speed_local = word.split('s')
+            elif i == 1 and word[0] == 'z':
+                _, z_component_local = word.split('z')
+        return int(speed_local), int(z_component_local)
 
 def read_file(file_name):
     
@@ -269,6 +294,7 @@ def data_split_and_fit(N):
 kife_edge.py end
 
 '''
+speed, z_component = None, None
 x_new, y_new, data_list = None, None, None
 D_1, D_2, mid_ofx, xpeaks, ave_x, y_grad = None, None, None, None, None, None
 
@@ -277,7 +303,8 @@ def B0f():
     load row data and show
     '''
     global xdat_row, ydat_row, x_new, y_new, data_list, D_1, D_2, mid_ofx, xpeaks, ave_x, y_grad 
-    xdat_row, ydat_row = open_file()
+
+    xdat_row, ydat_row, speed, z_component = open_file()
     x_new, y_new, data_list = skip_noise(xdat_row, ydat_row)    
     D_1, D_2, mid_ofx, xpeaks, ave_x, y_grad = data_split_and_fit(3) # 改變平均值
     ax.clear()
@@ -285,10 +312,22 @@ def B0f():
     ax.set_ylabel("signal (a.u.)")
     ax.plot(xdat_row, ydat_row, 'b.',markersize = 4), ax.grid(True)
     line.draw() 
-    if xpeaks is not None:
+
+    # clear lower right corner
+    r = tk.Label(root, bg='#C6C6C6') 
+    r.place(relx=0.2, rely=0.78, relwidth=0.78, relheight=0.2) 
+
+    if speed is not None:
         l = tk.Label(root, fg='#FFDC00', font=("Arial", 18),
         text = f'Load Success!')
         l.place(relx=0.02, rely=0.59, relwidth=0.16, relheight=0.39)
+
+    elif speed is None:
+        var = tk.StringVar()
+        errre_for_filename = tk.Label(root, textvariable=var, bg='#C6C6C6', fg='#F00000', font=("Arial", 18))
+        var.set('Name Error! \nFile name should be: \n\ts100_z10_ ...')
+        errre_for_filename .place(relx=0.26, rely=0.81)
+
 
 def B1f():
     '''
@@ -338,21 +377,49 @@ def B3f():
             k_parameter.append(p[1])
     line.draw()  
 
-    speed = int(100)
-
     if k_parameter is not None:
-        enter = '\n'
-        Totalk = 0
+        '''
+        caculate average spot size
+        '''
+        total_k = 0
         for i, val in enumerate(k_parameter):
-            Totalk += abs(val)
-        avg_k = Totalk /len(k_parameter)
-        
+            total_k += abs(val)
+        avg_k = total_k /len(k_parameter)
+
         spot_size = 2*np.pi / ( avg_k**2 ) * speed**2
-        r = tk.Label(root, bg='#C6C6C6', fg='#000000', font=("Arial", 15),
-                    text = f'speed: {speed} um/s {enter} spot size: {round(spot_size,2)} um^2')
+        
+        spot_size_f = round(spot_size, 2) # round(spot_size, 2) type is np.float
+
+        var1, var2, var3, var4, var5, var6 = tk.StringVar(), tk.StringVar(), tk.StringVar(), tk.StringVar(), tk.StringVar(), tk.StringVar()
+        la1 = tk.Label(root, textvariable=var1, bg='#C6C6C6', fg='#000000', font=("Arial", 16))
+        var1.set("speed    : ")
+        la1.place(relx=0.22, rely=0.81)
+        la2 = tk.Label(root, textvariable=var2, bg='#C6C6C6', fg='#000000', font=("Arial", 16))
+        var2.set("spot size: ")
+        la2.place(relx=0.22, rely=0.87)
+        la3 = tk.Label(root, textvariable=var3, bg='#F0F0F0', fg='#850000', font=("Arial", 16), relief="ridge")
+        var3.set(speed)
+        la3.place(relx=0.32, rely=0.81)
+
+        if len( str(spot_size_f) ) > 5:
+            '''
+            Avoid too long values.
+            '''
+            spot_size_f = round(spot_size, 1)
+        elif len( str(spot_size_f) ) > 5:
+            spot_size_f = round(spot_size, 0)
+        la4 = tk.Label(root, textvariable=var4, bg='#F0F0F0', fg='#BA1515', font=("Arial", 18), relief="ridge") 
+        var4.set(spot_size_f)
+        la4.place(relx=0.32, rely=0.87)
+
+        la5 = tk.Label(root, textvariable=var5, bg='#C6C6C6', fg='#000000', font=("Arial", 16))
+        var5.set("um/s")
+        la5.place(relx=0.37, rely=0.81)
+        la6 = tk.Label(root, textvariable=var6, bg='#C6C6C6', fg='#000000', font=("Arial", 18))
+        var6.set("um^2")
+        la6.place(relx=0.39, rely=0.87)
+    # elif k_parameter == None:
         r.place(relx=0.2, rely=0.78, relwidth=0.78, relheight=0.2)
-
-
 
 def time_to_position(speed):
     '''
@@ -362,16 +429,18 @@ def time_to_position(speed):
     return speed / 1000
 
 def B4f():
-
+    '''
+    cls
+    '''
     ax.clear()
     ax.axis('off')
-    # ax.text(0.15, 0.55, 'Hello World!', fontsize=20, color='k')
     line.draw() 
+
+    r = tk.Label(root, bg='#C6C6C6') 
+    r.place(relx=0.2, rely=0.78, relwidth=0.78, relheight=0.2) 
 
 
     
-
-
 #--- Raiz ---
 root = tk.Tk()
 root.geometry('900x600')
@@ -403,7 +472,7 @@ right_frame.place(relx=0.2, rely=0.02, relwidth=0.78, relheight=0.72)
 # ld_frame.place(relx=0.02, rely=0.59, relwidth=0.16, relheight=0.39)
 
 l = tk.Label(root, fg='#FF0000', font=("Arial", 15),
-text = f'Plz load data first!')
+            text = f'Plz load data first!')
 l.place(relx=0.02, rely=0.59, relwidth=0.16, relheight=0.39)
 
 r = tk.Label(root, bg='#C6C6C6', fg='#000000', font=("Arial", 15))
