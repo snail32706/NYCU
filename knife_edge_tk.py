@@ -63,9 +63,8 @@ def plt_xy(x, y, A, axis=None):
     ax1 = fig.add_subplot(111)
 
     if axis is not None:
-        ax1.set_xlabel("time (ms)")
+        ax1.set_xlabel("time (s)")
         ax1.set_ylabel("signal (a.u.)")
-
 
     ax1.plot(x, y, 'b.',markersize = 4)
     plt.show()
@@ -85,8 +84,8 @@ def fit_error(xdat, ydat, mid_x):
     p0=[0.023, 80.0, mid_x, data_list[0]]
     popt, pcov = curve_fit(myerf, xdat, ydat, p0, method="lm")
     perr = np.sqrt(np.diag(pcov)) * 4.0
-    # σ = np.sqrt(np.diag(pcov))        
-    # a = pd.DataFrame(data={'params':popt,'σ':σ}, index = myerf.__code__.co_varnames[1:])      
+    σ = np.sqrt(np.diag(pcov))        
+    a = pd.DataFrame(data={'params':popt,'σ':σ}, index = myerf.__code__.co_varnames[1:])      
     # display(a)   
 
     return popt
@@ -282,7 +281,7 @@ def B0f():
     x_new, y_new, data_list = skip_noise(xdat_row, ydat_row)    
     D_1, D_2, mid_ofx, xpeaks, ave_x, y_grad = data_split_and_fit(3) # 改變平均值
     ax.clear()
-    ax.set_xlabel("time (ms)")
+    ax.set_xlabel("time (s)")
     ax.set_ylabel("signal (a.u.)")
     ax.plot(xdat_row, ydat_row, 'b.',markersize = 4), ax.grid(True)
     line.draw() 
@@ -297,7 +296,7 @@ def B1f():
     '''
     # x_new, y_new, data_list = skip_noise(xdat_row, ydat_row)    
     ax.clear()
-    ax.set_xlabel("time (ms)")
+    ax.set_xlabel("time (s)")
     ax.set_ylabel("signal (a.u.)")
     ax.plot(x_new, y_new, 'b.',markersize = 4), ax.grid(True)
     line.draw()   
@@ -308,7 +307,7 @@ def B2f():
     '''
 
     ax.clear()
-    ax.set_xlabel("time (ms)")
+    ax.set_xlabel("time (s)")
     ax.set_ylabel("signal (a.u.)")
     ax.plot(ave_x, y_grad, 'b.-',markersize = 4), ax.grid(True)
     # ax.scatter(x, y, s=area, c=colors, alpha=0.5)
@@ -318,9 +317,10 @@ def B2f():
 
 def B3f():
 
+    k_parameter = []
     ax.clear()
     ax.plot(x_new, y_new, 'b.',markersize = 5)
-    ax.set_xlabel("time (ms)")
+    ax.set_xlabel("time (s)")
     ax.set_ylabel("signal (a.u.)")
     ax.set_title("fit: a * erf(k * (x - x0)) + y0")
     c = ['#B22222', '#CD9B1D', '#FF7D40', '#FFC125', '#FF3030', '#FFC125', 
@@ -329,27 +329,47 @@ def B3f():
             p = fit_error(x_new, y_new, mid_ofx[0])
             a, k, x0, y0 = p[0], p[1], p[2], p[3]
             ax.plot(x_new, myerf(x_new, a, k, x0, y0), color=c[0], linewidth=8, alpha=0.5)
+            k_parameter.append(p[1])
     else:    
         for i, val in enumerate(mid_ofx):
             p = fit_error(D_1[i], D_2[i], val)
             a, k, x0, y0 = p[0], p[1], p[2], p[3]
             ax.plot(D_1[i], myerf(D_1[i], a, k, x0, y0), color=c[i] , linewidth=8, alpha=0.5)
+            k_parameter.append(p[1])
     line.draw()  
-    if p is not None:
+
+    speed = int(100)
+
+    if k_parameter is not None:
         enter = '\n'
+        Totalk = 0
+        for i, val in enumerate(k_parameter):
+            Totalk += abs(val)
+        avg_k = Totalk /len(k_parameter)
+        
+        spot_size = 2*np.pi / ( avg_k**2 ) * speed**2
         r = tk.Label(root, bg='#C6C6C6', fg='#000000', font=("Arial", 15),
-                    text = f'G')
+                    text = f'speed: {speed} um/s {enter} spot size: {round(spot_size,2)} um^2')
         r.place(relx=0.2, rely=0.78, relwidth=0.78, relheight=0.2)
 
 
+
+def time_to_position(speed):
+    '''
+    speed = v (um/s).
+    x = v * Δt. If v = 100 um/s, x = 0.1 um (= 100 * 0.001)
+    '''
+    return speed / 1000
+
 def B4f():
+
     ax.clear()
     ax.axis('off')
     # ax.text(0.15, 0.55, 'Hello World!', fontsize=20, color='k')
-
     line.draw() 
 
 
+    
 
 
 #--- Raiz ---
@@ -362,7 +382,7 @@ root.title("Error Func Fitting")
 
 '''
 Frame:
-    bd:     指標周圍邊框的大小
+    bd    : 指標周圍邊框的大小
     height: The vertical dimension of the new frame.
 
 place:
@@ -421,7 +441,7 @@ ax.grid(True),ax.set_xlabel('$x$'),ax.set_ylabel('$y(x)$')
 line = FigureCanvasTkAgg(figure, right_frame)
 line.get_tk_widget().pack(side=tk.LEFT, fill=tk.BOTH,expand=1)
 #----------------------
-
+B0f()
 root.mainloop()
 
 
