@@ -115,9 +115,9 @@ def skip_noise():
     Using noise range (noise_bottom ~ noise_top) skip the noise data.
     '''
     # load file
-    # xdat, ydat = read_file('100--1-21-05-57-11212022.txt')
-    xdat, ydat = read_file("景貴刀口微分.txt") # 刪除
-    plt_xy(xdat, ydat, '.')
+    xdat, ydat = read_file('100--1-21-05-57-11212022.txt')
+    # xdat, ydat = read_file("景貴刀口微分.txt") # 刪除
+    # plt_xy(xdat, ydat, '.')
 
     # First step:
     
@@ -296,31 +296,6 @@ def data_split_and_fit(N):
     return D_1, D_2, mid_ofx
 # D_1, D_2, mid_ofx = data_split_and_fit(3)
 
-def plt_error_fit():
-    
-    D_1, D_2, mid_ofx = data_split_and_fit(3)
-
-    fig = plt.figure(figsize=(10, 4), dpi=100)
-    ax1 = fig.add_subplot(111)
-    ax1.plot(x_new, y_new, 'b.',markersize = 5)
-    ax1.set_xlabel("time (ms)")
-    ax1.set_ylabel("signal (a.u.)")
-    
-    c = ['#B22222', '#CD9B1D', '#FF7D40', '#FFC125', '#FF3030', '#FFC125'] # color code for fit diff curve
-    if len(mid_ofx) == 1:
-            p = fit_error(x_new, y_new, mid_ofx[0])
-            a, k, x0, y0 = p[0], p[1], p[2], p[3]
-            ax1.plot(x_new, myerf(x_new, a, k, x0, y0), color=c[0] , linewidth=5, alpha=0.5)
-    else:    
-        for i, val in enumerate(mid_ofx):
-            p = fit_error(D_1[i], D_2[i], val)
-
-            a, k, x0, y0 = p[0], p[1], p[2], p[3]
-            ax1.plot(D_1[i], myerf(D_1[i], a, k, x0, y0), color=c[i] , linewidth=5, alpha=0.5)
-            # F.append(p)
-            # print(a, k, x0, y0)
-    plt.show()
-
 def plt_gauss_fit():
     
     D_1, D_2, mid_ofx = data_split_and_fit(3)
@@ -346,10 +321,34 @@ def plt_gauss_fit():
             # print(a, k, x0, y0)
     plt.show()
 
-# plt_error_fit()
+def plt_error_fit():
+    
+    D_1, D_2, mid_ofx = data_split_and_fit(3)
+
+    fig = plt.figure(figsize=(10, 4), dpi=100)
+    ax1 = fig.add_subplot(111)
+    ax1.plot(x_new, y_new, 'b.',markersize = 5)
+    ax1.set_xlabel("time (ms)")
+    ax1.set_ylabel("signal (a.u.)")
+    c = ['#B22222', '#CD9B1D', '#FF7D40', '#FFC125', '#FF3030', '#FFC125'] # color code for fit diff curve
+    if len(mid_ofx) == 1:
+            p = fit_error(x_new, y_new, mid_ofx[0])
+            a, k, x0, y0 = p[0], p[1], p[2], p[3]
+            ax1.plot(x_new, myerf(x_new, a, k, x0, y0), color=c[0] , linewidth=5, alpha=0.5)
+    else:    
+        for i, val in enumerate(mid_ofx):
+            p = fit_error(D_1[i], D_2[i], val)
+
+            a, k, x0, y0 = p[0], p[1], p[2], p[3]
+            ax1.plot(D_1[i], myerf(D_1[i], a, k, x0, y0), color=c[i] , linewidth=5, alpha=0.5)
+            # F.append(p)
+            # print(a, k, x0, y0)
+    plt.show()
+
+
+
+plt_error_fit()
 # fit_gauss()
-
-
 # Differential_array(x_new, y_new)
 
 
