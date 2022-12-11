@@ -290,6 +290,17 @@ def data_split_and_fit(N):
     return D_1, D_2, mid_ofx, xpeaks, ave_x, y_grad
 # D_1, D_2, mid_ofx, xpeaks, ave_x, y_grad = data_split_and_fit(3) # 改變平均值
 
+spot_size_list = []
+def calculate_spot_size(k_parameter):
+    '''
+    put all k
+    calculate spot size and StD.
+    '''
+    for i, val in enumerate(k_parameter):
+        k_um = val / speed 
+        spot_size = 2*np.pi / ( k_um**2 ) # spot size = pi * r^2
+        spot_size_list.append(spot_size)
+
 '''
 kife_edge.py end
 
@@ -302,7 +313,7 @@ def B0f():
     '''
     load row data and show
     '''
-    global xdat_row, ydat_row, x_new, y_new, data_list, D_1, D_2, mid_ofx, xpeaks, ave_x, y_grad 
+    global xdat_row, ydat_row, x_new, y_new, data_list, D_1, D_2, mid_ofx, xpeaks, ave_x, y_grad, speed
 
     xdat_row, ydat_row, speed, z_component = open_file()
     x_new, y_new, data_list = skip_noise(xdat_row, ydat_row)    
@@ -354,6 +365,7 @@ def B2f():
         ax.scatter(ave_x[i], y_grad[i], s=8**2, c='r', alpha=0.5)
     line.draw()    
 
+
 def B3f():
 
     k_parameter = []
@@ -380,15 +392,28 @@ def B3f():
     if k_parameter is not None:
         '''
         caculate average spot size
-        '''
-        total_k = 0
-        for i, val in enumerate(k_parameter):
-            total_k += abs(val)
-        avg_k = total_k /len(k_parameter)
 
-        spot_size = 2*np.pi / ( avg_k**2 ) * speed**2
-        
-        spot_size_f = round(spot_size, 2) # round(spot_size, 2) type is np.float
+        parameter k is slope which mean k = Δy / Δx.
+        If Δx = time(s) * speed(um/s). 
+        Slope k(1/um) = k(1/s) * (1/speed)
+        '''
+        calculate_spot_size(k_parameter)
+        var4.set(f'{spot_size_list}')
+        # sum_delta_k_square, sigma_k = 0, 0
+        # count_k = 0
+        # for i, val in enumerate(k_parameter): # found average of k.
+        #     total_k += abs(val/speed)
+        #     count_k += 1
+        # avg_k = total_k / count_k
+        # spot_size = 2*np.pi / ( avg_k**2 ) # spot size = pi * r^2
+
+        # for i, val in enumerate(k_parameter): # found σ of k.
+        #     sum_delta_k_square += (val/speed - avg_k)**2
+        # sigma_k = sum_delta_k_square / count_k
+
+        # spot_size_f = round(spot_size, 2) # round(spot_size, 2) type is np.float
+        # spot_size_sigma = 2*np.pi / ( sigma_k**2 )
+        # sigma_k_sigma_f = round(spot_size_sigma, 2)
 
         var1, var2, var3, var4, var5, var6 = tk.StringVar(), tk.StringVar(), tk.StringVar(), tk.StringVar(), tk.StringVar(), tk.StringVar()
         la1 = tk.Label(root, textvariable=var1, bg='#C6C6C6', fg='#000000', font=("Arial", 16))
@@ -406,18 +431,32 @@ def B3f():
             Avoid too long values.
             '''
             spot_size_f = round(spot_size, 1)
-        elif len( str(spot_size_f) ) > 5:
+        elif len( str(spot_size_f) ) > 6:
             spot_size_f = round(spot_size, 0)
+
+        # print spot size:
         la4 = tk.Label(root, textvariable=var4, bg='#F0F0F0', fg='#BA1515', font=("Arial", 18), relief="ridge") 
-        var4.set(spot_size_f)
+        # var4.set(f'{spot_size_f} ± {sigma_k_sigma_f}')
+        
+        '''
+        我要換個方式計算
+        '''
+        calculate_spot_size(k_parameter)
+        var4.set(f'{spot_size_list}')
+        # np.std(np.array(spot_size_list)  )
+
         la4.place(relx=0.32, rely=0.87)
 
         la5 = tk.Label(root, textvariable=var5, bg='#C6C6C6', fg='#000000', font=("Arial", 16))
         var5.set("um/s")
         la5.place(relx=0.37, rely=0.81)
-        la6 = tk.Label(root, textvariable=var6, bg='#C6C6C6', fg='#000000', font=("Arial", 18))
-        var6.set("um^2")
-        la6.place(relx=0.39, rely=0.87)
+        # la6 = tk.Label(root, textvariable=var6, bg='#C6C6C6', fg='#000000', font=("Arial", 18))
+        # var6.set("um^2")
+        # la6.place(relx=0.44, rely=0.87)
+
+        la6 = tk.Label(root, textvariable=var6, bg='#C6C6C6', fg='#000000', font=("Arial", 18)) #刪除
+        var6.set(f'{np.std(np.array(spot_size_list)  )}') #刪除
+        la6.place(relx=0.44, rely=0.9) #刪除
     # elif k_parameter == None:
         r.place(relx=0.2, rely=0.78, relwidth=0.78, relheight=0.2)
 
