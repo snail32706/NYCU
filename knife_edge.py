@@ -346,7 +346,6 @@ def plt_error_fit():
     plt.show()
 
 
-
 plt_error_fit()
 # fit_gauss()
 # Differential_array(x_new, y_new)

@@ -13,6 +13,11 @@ from scipy.signal import find_peaks
 
 # file_path_bytk = None
 xdat_row, ydat_row = None, None
+import glob, os
+os.chdir("/Users/k.y.chen/Documents/Coding_all/NYCU")
+for file in glob.glob("*.txt"):
+    print(file)
+
 
 def open_file(): 
     '''
@@ -51,7 +56,7 @@ def found_name(file):
         if 'txt' in i:
             file_name, _ = i.split('txt')
             
-    if file_name[0] != 's':
+    if file_name_all[0] != 's':
         # print('Name Error! \nFile name should be: \n\ts100_z10_ ...')
         return None, None
     else:
@@ -331,7 +336,7 @@ def B0f():
     if speed is not None:
         l = tk.Label(root, fg='#FFDC00', font=("Arial", 18),
         text = f'Load Success!')
-        l.place(relx=0.02, rely=0.59, relwidth=0.16, relheight=0.39)
+        l.place(relx=0.02, rely=0.85, relwidth=0.16, relheight=0.05)
 
     elif speed is None:
         var = tk.StringVar()
@@ -397,86 +402,65 @@ def B3f():
         If Δx = time(s) * speed(um/s). 
         Slope k(1/um) = k(1/s) * (1/speed)
         '''
-        calculate_spot_size(k_parameter)
-        var4.set(f'{spot_size_list}')
-        # sum_delta_k_square, sigma_k = 0, 0
-        # count_k = 0
-        # for i, val in enumerate(k_parameter): # found average of k.
-        #     total_k += abs(val/speed)
-        #     count_k += 1
-        # avg_k = total_k / count_k
-        # spot_size = 2*np.pi / ( avg_k**2 ) # spot size = pi * r^2
-
-        # for i, val in enumerate(k_parameter): # found σ of k.
-        #     sum_delta_k_square += (val/speed - avg_k)**2
-        # sigma_k = sum_delta_k_square / count_k
-
-        # spot_size_f = round(spot_size, 2) # round(spot_size, 2) type is np.float
-        # spot_size_sigma = 2*np.pi / ( sigma_k**2 )
-        # sigma_k_sigma_f = round(spot_size_sigma, 2)
+        calculate_spot_size(k_parameter)  # note: spot_size_list is global valuable.
+        spot_size_avg = sum(spot_size_list) / len(spot_size_list)
+        spot_size_StD = np.std(   np.array(spot_size_list)  )
+        spot_size_StD_f = np.round(spot_size_StD, 2)
 
         var1, var2, var3, var4, var5, var6 = tk.StringVar(), tk.StringVar(), tk.StringVar(), tk.StringVar(), tk.StringVar(), tk.StringVar()
-        la1 = tk.Label(root, textvariable=var1, bg='#C6C6C6', fg='#000000', font=("Arial", 16))
+        la1 = tk.Label(root, textvariable=var1, bg='#C6C6C6', fg='#000000', font=("Arial", 18))
         var1.set("speed    : ")
         la1.place(relx=0.22, rely=0.81)
-        la2 = tk.Label(root, textvariable=var2, bg='#C6C6C6', fg='#000000', font=("Arial", 16))
+        la2 = tk.Label(root, textvariable=var2, bg='#C6C6C6', fg='#000000', font=("Arial", 18))
         var2.set("spot size: ")
         la2.place(relx=0.22, rely=0.87)
-        la3 = tk.Label(root, textvariable=var3, bg='#F0F0F0', fg='#850000', font=("Arial", 16), relief="ridge")
+        la3 = tk.Label(root, textvariable=var3, bg='#F0F0F0', fg='#850000', font=("Arial", 18), relief="ridge")
         var3.set(speed)
         la3.place(relx=0.32, rely=0.81)
 
-        if len( str(spot_size_f) ) > 5:
-            '''
-            Avoid too long values.
-            '''
-            spot_size_f = round(spot_size, 1)
-        elif len( str(spot_size_f) ) > 6:
-            spot_size_f = round(spot_size, 0)
+        spot_size_avg_f = round(spot_size_avg, 2)
+        '''
+        Avoid too long values.
+        '''
+        if float(spot_size_avg) > 100:
+            spot_size_avg_f = round(spot_size_avg, 1)
+        elif float(spot_size_avg) > 1000:
+            spot_size_avg_f = round(spot_size_avg, 0)
 
         # print spot size:
         la4 = tk.Label(root, textvariable=var4, bg='#F0F0F0', fg='#BA1515', font=("Arial", 18), relief="ridge") 
-        # var4.set(f'{spot_size_f} ± {sigma_k_sigma_f}')
-        
-        '''
-        我要換個方式計算
-        '''
-        calculate_spot_size(k_parameter)
-        var4.set(f'{spot_size_list}')
-        # np.std(np.array(spot_size_list)  )
-
+        var4.set(f'{spot_size_avg_f} ± {spot_size_StD_f}')
         la4.place(relx=0.32, rely=0.87)
 
-        la5 = tk.Label(root, textvariable=var5, bg='#C6C6C6', fg='#000000', font=("Arial", 16))
+        la5 = tk.Label(root, textvariable=var5, bg='#C6C6C6', fg='#000000', font=("Arial", 18))
         var5.set("um/s")
         la5.place(relx=0.37, rely=0.81)
-        # la6 = tk.Label(root, textvariable=var6, bg='#C6C6C6', fg='#000000', font=("Arial", 18))
-        # var6.set("um^2")
-        # la6.place(relx=0.44, rely=0.87)
 
-        la6 = tk.Label(root, textvariable=var6, bg='#C6C6C6', fg='#000000', font=("Arial", 18)) #刪除
-        var6.set(f'{np.std(np.array(spot_size_list)  )}') #刪除
-        la6.place(relx=0.44, rely=0.9) #刪除
+        la6 = tk.Label(root, textvariable=var6, bg='#C6C6C6', fg='#000000', font=("Arial", 18))
+        var6.set("um^2")
+        la6.place(relx=0.44, rely=0.87)
+
     # elif k_parameter == None:
         r.place(relx=0.2, rely=0.78, relwidth=0.78, relheight=0.2)
 
-def time_to_position(speed):
-    '''
-    speed = v (um/s).
-    x = v * Δt. If v = 100 um/s, x = 0.1 um (= 100 * 0.001)
-    '''
-    return speed / 1000
-
 def B4f():
-    '''
-    cls
-    '''
+    # cls
+
     ax.clear()
     ax.axis('off')
     line.draw() 
 
     r = tk.Label(root, bg='#C6C6C6') 
     r.place(relx=0.2, rely=0.78, relwidth=0.78, relheight=0.2) 
+
+def B5f():
+    '''
+    show table
+    要優化全域變數
+
+    '''
+    xdat_row, ydat_row, speed, z_component = open_file()
+    # ax.plot(xdat_row, ydat_row, 'b.',markersize = 4), ax.grid(True)
 
 
     
@@ -502,7 +486,7 @@ place:
 '''
 
 left_frame = tk.Frame(root)
-left_frame.place(relx=0.02, rely=0.02, relwidth=0.16, relheight=0.55)
+left_frame.place(relx=0.02, rely=0.02, relwidth=0.16, relheight=0.74)
 
 right_frame = tk.Frame(root, bg='#C0C0C0') 
 right_frame.place(relx=0.2, rely=0.02, relwidth=0.78, relheight=0.72)
@@ -512,7 +496,7 @@ right_frame.place(relx=0.2, rely=0.02, relwidth=0.78, relheight=0.72)
 
 l = tk.Label(root, fg='#FF0000', font=("Arial", 15),
             text = f'Plz load data first!')
-l.place(relx=0.02, rely=0.59, relwidth=0.16, relheight=0.39)
+l.place(relx=0.02, rely=0.85, relwidth=0.16, relheight=0.05)
 
 r = tk.Label(root, bg='#C6C6C6', fg='#000000', font=("Arial", 15))
 r.place(relx=0.2, rely=0.78, relwidth=0.78, relheight=0.2)
@@ -524,22 +508,25 @@ r.place(relx=0.2, rely=0.78, relwidth=0.78, relheight=0.2)
 #---------------
 
 #--- Botones ---
-RH = 0.19
+RH = 0.15
 
 B0 = tk.Button(left_frame,text='Load data' + '\n' 'and Show',command = B0f)
 B0.place(relheight=RH, relwidth=1)
 
 B1 = tk.Button(left_frame,text="Remove noise",command = B1f)
-B1.place(rely=(0.1 + RH*0.54) ,relheight=RH, relwidth=1)
+B1.place(rely=(0.1 + RH*0.44) ,relheight=RH, relwidth=1)
 
 B2 = tk.Button(left_frame,text="Gradient",command = B2f)
-B2.place(rely= 2*(0.1 + RH*0.54) ,relheight=RH, relwidth=1)
+B2.place(rely= 2*(0.1 + RH*0.44) ,relheight=RH, relwidth=1)
 
 B3 = tk.Button(left_frame,text="Fit Error func",command = B3f)
-B3.place(rely= 3*(0.1 + RH*0.54) ,relheight=RH, relwidth=1)
+B3.place(rely= 3*(0.1 + RH*0.44) ,relheight=RH, relwidth=1)
 
 B4 = tk.Button(left_frame, text="Clear",command = B4f)
-B4.place(rely= 4*(0.1 + RH*0.54) ,relheight=RH, relwidth=1)
+B4.place(rely= 4*(0.1 + RH*0.44) ,relheight=RH, relwidth=1)
+
+B5 = tk.Button(left_frame, text="Fit & show table",command = B5f)
+B5.place(rely= 5*(0.1 + RH*0.44) ,relheight=RH, relwidth=1)
 #------------
 
 #--- Agregar figura ---
@@ -549,7 +536,7 @@ ax.grid(True),ax.set_xlabel('$x$'),ax.set_ylabel('$y(x)$')
 line = FigureCanvasTkAgg(figure, right_frame)
 line.get_tk_widget().pack(side=tk.LEFT, fill=tk.BOTH,expand=1)
 #----------------------
-B0f()
+# B0f()
 root.mainloop()
 
 
