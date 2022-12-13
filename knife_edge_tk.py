@@ -7,50 +7,12 @@ plt.style.use('ggplot')
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import pandas as pd
 from IPython.display import display, Math, Latex
-import matplotlib.pyplot as plt
 from scipy.special import erf
 from scipy.optimize import curve_fit
 from scipy.signal import find_peaks
 
 # ------ --------- ------ #
 # ------ Load File ------ #
-
-def load_path():
-    root = tk.Tk()
-    root.withdraw()
-    folder_path = tk.filedialog.askdirectory()
-    return folder_path
-
-def r_all_file():
-    '''
-    get all .txt file.
-    then write in a list: [file name, s=?, z=?, ...]
-    '''
-    folder_path = load_path()
-
-    list_of_file = []
-    # os.chdir("/Users/")
-    os.chdir(folder_path)
-    
-    for file in glob.glob("*.txt"):
-        if judgment_format(file) is not None:
-            list_of_file.append(  judgment_format(file)[0]  )
-    '''
-    list_of_file: [ 'file_name', 'file_name', 'file_name', ... ]
-    '''
-    return list_of_file, folder_path 
-
-def judgment_format(file):
-    '''
-    split flie name by '_'
-    [ file_name, speed, z ]  >> type: str, int, int
-    '''
-    file_name = str(file)
-    if file_name[0] == 's':
-        SS, ZZ, _ = file_name.split('_')
-        _ , speed = SS.split('s')
-        _ , z_component = ZZ.split('z')
-        return file_name, int(speed), int(z_component)
 
 def open_file(): 
     '''
@@ -72,6 +34,43 @@ def open_file():
         # file_path_bytk = str(file_path_bytk)
     
     return file_path_bytk
+
+def r_all_file():
+    '''
+    get all .txt file.
+    then write in a list: [file name, s=?, z=?, ...]
+    '''
+    folder_path = load_path()
+
+    list_of_file = []
+    # os.chdir("/Users/")
+    os.chdir(folder_path)
+    
+    for file in glob.glob("*.txt"):
+        if judgment_format(file) is not None:
+            list_of_file.append(  judgment_format(file)[0]  )
+    '''
+    list_of_file: [ 'file_name', 'file_name', 'file_name', ... ]
+    '''
+    return list_of_file, folder_path 
+    
+def load_path():
+    root = tk.Tk()
+    root.withdraw()
+    folder_path = tk.filedialog.askdirectory()
+    return folder_path
+
+def judgment_format(file):
+    '''
+    split flie name by '_'
+    [ file_name, speed, z ]  >> type: str, int, int
+    '''
+    file_name = str(file)
+    if file_name[0] == 's':
+        SS, ZZ, _ = file_name.split('_')
+        _ , speed = SS.split('s')
+        _ , z_component = ZZ.split('z')
+        return file_name, int(speed), int(z_component)
 
 def absolute_to_relative(absolute_file_path):
 
@@ -388,7 +387,7 @@ def FAS(file, get_row_data=None):
         avg_x_byN, del_y_byN, N = gradient(x_new, y_new, 3)
         mid_ofx, xpeaks         = Find_thepeak(x_new, y_new, N) # 與 gradient 綁在一起
         D_1, D_2                = data_split_and_fit(x_new, y_new, xpeaks, N) # 與 Find_thepeak 綁在一起
-        return file_name, speed, z_int, xdat_row, ydat_row, avg_x_byN, mid_ofx, D_1, D_2
+        return file_name, speed, z_int, xdat_row, ydat_row, x_new, y_new, avg_x_byN, del_y_byN, mid_ofx, xpeaks, D_1, D_2
 
     elif get_row_data == 'yes':
         file_name           = absolute_to_relative(file)
@@ -428,7 +427,7 @@ def B1f():
     show processing data
     '''  
 
-    file_name, speed, z_int, xdat_row, ydat_row, avg_x_byN, mid_ofx, D_1, D_2 = FAS(absolute_file_path)
+    file_name, speed, z_int, xdat_row, ydat_row, x_new, y_new, avg_x_byN, del_y_byN, mid_ofx, xpeaks, D_1, D_2 = FAS(absolute_file_path)
 
     ax.clear()
     ax.set_xlabel("time (s)")
@@ -440,14 +439,14 @@ def B2f():
     '''
     show gradient and peaks.
     '''
-    file_name, speed, z_int, xdat_row, ydat_row, avg_x_byN, mid_ofx, D_1, D_2 = FAS(absolute_file_path)
+    file_name, speed, z_int, xdat_row, ydat_row, x_new, y_new, avg_x_byN, del_y_byN, mid_ofx, xpeaks, D_1, D_2 = FAS(absolute_file_path)
 
     ax.clear()
     ax.set_xlabel("time (s)")
     ax.set_ylabel("signal (a.u.)")
     ax.plot(avg_x_byN, abs(del_y_byN), 'b.-',markersize = 4), ax.grid(True)
     # ax.scatter(x, y, s=area, c=colors, alpha=0.5)
-    for i in mid_ofx:
+    for i in xpeaks:
         ax.scatter(avg_x_byN[i], abs(del_y_byN)[i], s=8**2, c='r', alpha=0.5)
     line.draw()    
 
@@ -456,7 +455,7 @@ def B3f():
     '''
     Fit Error func
     '''
-    file_name, speed, z_int, xdat_row, ydat_row, avg_x_byN, mid_ofx, D_1, D_2 = FAS(absolute_file_path)
+    file_name, speed, z_int, xdat_row, ydat_row, x_new, y_new, avg_x_byN, del_y_byN, mid_ofx, xpeaks, D_1, D_2 = FAS(absolute_file_path)
     k_parameters   = append_all_k(D_1, D_2, mid_ofx, find_midy(x_new, y_new))
     spot_size_list = calculate_spot_size(k_parameters, speed)
 
