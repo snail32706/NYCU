@@ -101,6 +101,7 @@ def fit_error(xdat, ydat, mid_x):
     a = pd.DataFrame(data={'params':popt,'σ':σ}, index = myerf.__code__.co_varnames[1:])      
     # display(a)   
     return popt
+
 def calculate_spot_size(k_parameters, speed):
     '''
     put all k
@@ -300,16 +301,17 @@ def main():
     '''
     z 從最大值 開始讀檔
     '''
-    for i, ZZ in enumeate(z_list):
-        for f_list in list_of_file:  
-            if i[2] == ZZ:
+    for i, ZZ in enumerate(z_list):
+        spot_dependence_on_z.append([ZZ])
+        for f_name in list_of_file:  
+            if judgment_format(f_name)[2] == ZZ:
                 '''
                 z the same. Begine 
                 '''
-                absolute_file_path = f'{folder_path}/{f_list[0]}' # 絕對路徑
+                absolute_file_path = f'{folder_path}/{f_name[0]}' # 絕對路徑
 
                 xdat_r, ydat_r     = read_file(absolute_file_path)
-                speed, z_component = f_list[1], f_list[2]
+                speed, z_component = f_name[1], f_name[2]
 
                 x_new, y_new, mid_y     = skip_noise(xdat_r, ydat_r)
                 avg_x_byN, del_y_byN, N = gradient(x_new, y_new, N)
