@@ -1,6 +1,6 @@
 import tkinter as tk
 from tkinter import ttk
-import os
+import glob, os
 import numpy as np
 import matplotlib.pyplot as plt
 plt.style.use('ggplot')
@@ -18,7 +18,7 @@ from scipy.signal import find_peaks
 def load_path():
     root = tk.Tk()
     root.withdraw()
-    folder_path = filedialog.askdirectory()
+    folder_path = tk.filedialog.askdirectory()
     return folder_path
 
 def r_all_file():
@@ -533,11 +533,48 @@ def B4f():
     r.place(relx=0.2, rely=0.78, relwidth=0.78, relheight=0.2) 
 
 def B5f():
-    pass
+
+    spot_dependence_on_z = main()
+    row_N = len(spot_dependence_on_z)
+
+    top = tk.Toplevel(root)
+    top.geometry("400x550")
+    top.title("Dependence of the spot size on the lens focal length")
+
+    # Create an object of Style widget
+    style = ttk.Style()
+    style.theme_use('clam')
+
+    # Add a Treeview widget
+    style.configure('Treeview.Heading', foreground='black', background='white', font=('Arial',18))
+    style.configure('Treeview', rowheight=20)
+    style.configure('Treeview', foreground='black', background='white', font=('Arial',16),)
+
+    # Add a Treeview widget
+    tree = ttk.Treeview(top, columns=("1", "2", "3", "4"), 
+                        show='headings', height=50)     # height: 多少列
+    tree.column( "# 1", minwidth=0, width=80, anchor='center')
+    tree.heading("# 1", text  ="z (um)")
+    tree.column( "# 2", minwidth=0, width=100, anchor='center')
+    tree.heading("# 2", text  ="spot size")
+    tree.column( "# 3", minwidth=0, width=100, anchor='center')
+    tree.heading("# 3", text  ="StD.")
+    tree.column( "# 4", minwidth=0, width=50, anchor='center')
+    tree.heading("# 4", text  ="N")
+
+    for i, list_i in enumerate(spot_dependence_on_z):
+        Z_vlal = list_i.pop(0)
+        all_spots = np.array(list_i)
+        spot_size_Avg = round( sum(all_spots) / len(all_spots), 2)
+        spot_size_StD = round( np.std(all_spots), 2)
+        N = len(all_spots)
+
+        tree.insert('', 'end', text=str(i+1), 
+                    values=(str(Z_vlal), str(spot_size_Avg), str(spot_size_StD), str(N))
+                    )
+    tree.pack()
 
 
-
-    
 #--- Raiz ---
 root = tk.Tk()
 root.geometry('900x600')
@@ -599,7 +636,7 @@ B3.place(rely= 3*(0.1 + RH*0.44) ,relheight=RH, relwidth=1)
 B4 = tk.Button(left_frame, text="Clear",command = B4f)
 B4.place(rely= 4*(0.1 + RH*0.44) ,relheight=RH, relwidth=1)
 
-B5 = tk.Button(left_frame, text="Nothing",command = B5f)
+B5 = tk.Button(left_frame, text="Dependence\nof A on z",command = B5f)
 B5.place(rely= 5*(0.1 + RH*0.44) ,relheight=RH, relwidth=1)
 #------------
 
