@@ -1,4 +1,5 @@
 import tkinter as tk
+from tkinter import ttk
 import os
 import numpy as np
 import matplotlib.pyplot as plt
@@ -13,11 +14,6 @@ from scipy.signal import find_peaks
 
 # file_path_bytk = None
 xdat_row, ydat_row = None, None
-import glob, os
-os.chdir("/Users/k.y.chen/Documents/Coding_all/NYCU")
-for file in glob.glob("*.txt"):
-    print(file)
-
 
 def open_file(): 
     '''
@@ -31,6 +27,7 @@ def open_file():
                             title='Open a file',
                             initialdir='/Users/k.y.chen/Desktop/', 
                             filetypes=filetypes)
+    file_path_bytk = str(file)
     # file type is <class '_io.TextIOWrapper'> 
     if file:
         file_path_bytk = os.path.abspath(file.name)
@@ -56,7 +53,7 @@ def found_name(file):
         if 'txt' in i:
             file_name, _ = i.split('txt')
             
-    if file_name_all[0] != 's':
+    if file_name[0] != 's':
         # print('Name Error! \nFile name should be: \n\ts100_z10_ ...')
         return None, None
     else:
@@ -217,6 +214,7 @@ def Find_thepeak(x_new, y_new, N):
     ave_x, y_grad, y_grad_= gradient(x_new, y_new, N)
     
     counts, dis = np.histogram(y_grad, bins= 5)
+    # plt.stairs(counts, dis) # 可刪
     delta = abs(dis[0] - dis[2])
 
     peaks, _ = find_peaks(y_grad_, height=delta)
@@ -454,12 +452,13 @@ def B4f():
     r.place(relx=0.2, rely=0.78, relwidth=0.78, relheight=0.2) 
 
 def B5f():
+    pass
     '''
     show table
     要優化全域變數
 
     '''
-    xdat_row, ydat_row, speed, z_component = open_file()
+    # xdat_row, ydat_row, speed, z_component = open_file()
     # ax.plot(xdat_row, ydat_row, 'b.',markersize = 4), ax.grid(True)
 
 
@@ -525,7 +524,7 @@ B3.place(rely= 3*(0.1 + RH*0.44) ,relheight=RH, relwidth=1)
 B4 = tk.Button(left_frame, text="Clear",command = B4f)
 B4.place(rely= 4*(0.1 + RH*0.44) ,relheight=RH, relwidth=1)
 
-B5 = tk.Button(left_frame, text="Fit & show table",command = B5f)
+B5 = tk.Button(left_frame, text="Nothing",command = B5f)
 B5.place(rely= 5*(0.1 + RH*0.44) ,relheight=RH, relwidth=1)
 #------------
 
