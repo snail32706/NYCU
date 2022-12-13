@@ -374,6 +374,28 @@ def main():
                     spot_dependence_on_z[i].append( round(spot_i, 2) )
     return spot_dependence_on_z
 
+def FAS(file, get_row_data=None):
+    '''
+    file : put absolute path
+    analysis and split
+    '''
+    if get_row_data == None:
+        file_name       = absolute_to_relative(file)
+        _, speed, z_int = judgment_format(file_name)
+
+        xdat_row, ydat_row      = read_file(file)
+        x_new, y_new            = skip_noise(xdat_row, ydat_row)
+        avg_x_byN, del_y_byN, N = gradient(x_new, y_new, 3)
+        mid_ofx, xpeaks         = Find_thepeak(x_new, y_new, N) # 與 gradient 綁在一起
+        D_1, D_2                = data_split_and_fit(x_new, y_new, xpeaks, N) # 與 Find_thepeak 綁在一起
+        return file_name, speed, z_int, xdat_row, ydat_row, avg_x_byN, mid_ofx, D_1, D_2
+
+    elif get_row_data == 'yes':
+        file_name           = absolute_to_relative(file)
+        xdat_row, ydat_row  = read_file(file)
+        return file_name, xdat_row, ydat_row
+
+
 # ------ ------------ ------ # 
 # ------ tkinter func ------ # 
 
@@ -385,18 +407,8 @@ def B0f():
     '''
     global absolute_file_path
 
-    
-
     absolute_file_path = open_file()
-    file_name = absolute_to_relative(absolute_file_path)
-    _, speed, z_int = judgment_format(file_name)
-
-    xdat_row, ydat_row      = read_file(absolute_file_path)
-    x_new, y_new            = skip_noise(xdat_row, ydat_row)
-    avg_x_byN, del_y_byN, N = gradient(x_new, y_new, 3)
-    mid_ofx, xpeaks         = Find_thepeak(x_new, y_new, N) # 與 gradient 綁在一起
-    D_1, D_2                = data_split_and_fit(x_new, y_new, xpeaks, N) # 與 Find_thepeak 綁在一起
-
+    file_name, xdat_row, ydat_row,= FAS(absolute_file_path, 'yes')
     ax.clear()
     ax.set_xlabel("time (s)")
     ax.set_ylabel("signal (a.u.)")
@@ -407,25 +419,16 @@ def B0f():
     r = tk.Label(root, bg='#C6C6C6') 
     r.place(relx=0.2, rely=0.78, relwidth=0.78, relheight=0.2) 
 
-    if speed is not None:
-        l = tk.Label(root, fg='#FFDC00', font=("Arial", 18),
-        text = f'Load Success!')
-        l.place(relx=0.02, rely=0.85, relwidth=0.16, relheight=0.05)
+    l = tk.Label(root, fg='#FFDC00', font=("Arial", 18),
+    text = f'Load Success!')
+    l.place(relx=0.02, rely=0.85, relwidth=0.16, relheight=0.05)
 
 def B1f():
     '''
     show processing data
-    '''
-    # x_new, y_new, data_list = skip_noise(xdat_row, ydat_row)   
+    '''  
 
-    file_name = absolute_to_relative(absolute_file_path)
-    _, speed, z_int = judgment_format(file_name)
-
-    xdat_row, ydat_row      = read_file(absolute_file_path)
-    x_new, y_new            = skip_noise(xdat_row, ydat_row)
-    avg_x_byN, del_y_byN, N = gradient(x_new, y_new, 3)
-    mid_ofx, xpeaks         = Find_thepeak(x_new, y_new, N) 
-    D_1, D_2                = data_split_and_fit(x_new, y_new, xpeaks, N) 
+    file_name, speed, z_int, xdat_row, ydat_row, avg_x_byN, mid_ofx, D_1, D_2 = FAS(absolute_file_path)
 
     ax.clear()
     ax.set_xlabel("time (s)")
@@ -437,21 +440,14 @@ def B2f():
     '''
     show gradient and peaks.
     '''
-    file_name = absolute_to_relative(absolute_file_path)
-    _, speed, z_int = judgment_format(file_name)
-
-    xdat_row, ydat_row      = read_file(absolute_file_path)
-    x_new, y_new            = skip_noise(xdat_row, ydat_row)
-    avg_x_byN, del_y_byN, N = gradient(x_new, y_new, 3)
-    mid_ofx, xpeaks         = Find_thepeak(x_new, y_new, N) 
-    D_1, D_2                = data_split_and_fit(x_new, y_new, xpeaks, N) 
+    file_name, speed, z_int, xdat_row, ydat_row, avg_x_byN, mid_ofx, D_1, D_2 = FAS(absolute_file_path)
 
     ax.clear()
     ax.set_xlabel("time (s)")
     ax.set_ylabel("signal (a.u.)")
     ax.plot(avg_x_byN, abs(del_y_byN), 'b.-',markersize = 4), ax.grid(True)
     # ax.scatter(x, y, s=area, c=colors, alpha=0.5)
-    for i in xpeaks:
+    for i in mid_ofx:
         ax.scatter(avg_x_byN[i], abs(del_y_byN)[i], s=8**2, c='r', alpha=0.5)
     line.draw()    
 
@@ -460,15 +456,8 @@ def B3f():
     '''
     Fit Error func
     '''
-    file_name = absolute_to_relative(absolute_file_path)
-    _, speed, z_int = judgment_format(file_name)
-    
-    xdat_row, ydat_row      = read_file(absolute_file_path)
-    x_new, y_new            = skip_noise(xdat_row, ydat_row)
-    avg_x_byN, del_y_byN, N = gradient(x_new, y_new, 3)
-    mid_ofx, xpeaks         = Find_thepeak(x_new, y_new, N) 
-    D_1, D_2                = data_split_and_fit(x_new, y_new, xpeaks, N) 
-    k_parameters            = append_all_k(D_1, D_2, mid_ofx, find_midy(x_new, y_new))
+    file_name, speed, z_int, xdat_row, ydat_row, avg_x_byN, mid_ofx, D_1, D_2 = FAS(absolute_file_path)
+    k_parameters   = append_all_k(D_1, D_2, mid_ofx, find_midy(x_new, y_new))
     spot_size_list = calculate_spot_size(k_parameters, speed)
 
     ax.clear()
@@ -545,13 +534,7 @@ def B4f():
 
 def B5f():
     pass
-    '''
-    show table
-    要優化全域變數
 
-    '''
-    # xdat_row, ydat_row, speed, z_component = open_file()
-    # ax.plot(xdat_row, ydat_row, 'b.',markersize = 4), ax.grid(True)
 
 
     
