@@ -1,5 +1,6 @@
 import glob, os
 import tkinter as tk
+from tkinter import ttk
 from tkinter import filedialog
 import numpy as np
 import matplotlib.pyplot as plt
@@ -34,18 +35,16 @@ def r_all_file():
     
     for file in glob.glob("*.txt"):
         if judgment_format(file) is not None:
-            list_of_file.append(  judgment_format(file)  )
+            list_of_file.append(  judgment_format(file)[0]  )
     '''
-    list_of_file: [ ('file_name', speed, z),
-                    ('file_name', speed, z),
-                    ('file_name', speed, z) ]
-    folder_path : 資料夾路徑
+    list_of_file: [ 'file_name', 'file_name', 'file_name', ... ]
     '''
     return list_of_file, folder_path 
 
 def judgment_format(file):
     '''
     split flie name by '_'
+    [ file_name, speed, z ]  >> type: str, int, int
     '''
     file_name_all = str(file)
     if file_name_all[0] == 's':
@@ -87,7 +86,7 @@ def plt_xy(x, y, A, axis=None):
     elif A == '.-':
         ax1.plot(x, y, 'b.-')
 
-def fit_error(xdat, ydat, mid_x):
+def fit_error(xdat, ydat, mid_x, mid_y):
     '''
     2a: delta of f(-inf) to f(inf)
     k : slope
@@ -117,6 +116,19 @@ def calculate_spot_size(k_parameters, speed):
 # ------ ------------ ------ #
 # ------ Data Process ------ #
 
+def find_mid(xdat, ydat):
+    '''
+    Use distribution 
+    first : up or bottem data
+    second: up or bottem data
+    '''
+    counts, dis = np.histogram(ydat, bins= 5)  
+    # plt.stairs(counts, dis) # 可刪
+    max1 = counts.tolist().index(sorted(counts, reverse = True)[0])
+    max2 = counts.tolist().index(sorted(counts, reverse = True)[1])
+    
+    return (dis[max1] + dis[max2]) / 2
+
 def skip_noise(xdat, ydat):
     
     '''
@@ -136,17 +148,6 @@ def skip_noise(xdat, ydat):
     noise_top = dis[max_index] + delta/2
     noise_bottom = dis[max_index] - delta/2
     
-    '''
-    Use distribution 
-    first : noise
-    second: up or bottem data
-    third : up or bottem data
-    '''
-    
-    max1 = counts.tolist().index(sorted(counts, reverse = True)[1])
-    max2 = counts.tolist().index(sorted(counts, reverse = True)[2])
-    mid_y = (dis[max1] + dis[max2]) / 2
-
     # Second step:
     '''
     noise might be two line.
@@ -158,7 +159,7 @@ def skip_noise(xdat, ydat):
         if val_y > yyy[counts[0]]:
             xx.append(xdat[i])
             yy.append(ydat[i]) 
-    return xx, yy, mid_y 
+    return xx, yy
 
 def gradient(x, y, N):
     '''
@@ -191,9 +192,9 @@ def gradient(x, y, N):
     del_y_byN = np.array(y_grad)
     return avg_x_byN, del_y_byN, N
 
-def Find_thepeak(x_new, y_new):
+def Find_thepeak(x_new, y_new, N):
 
-    N = gradient(x_new, y_new, N)[2]
+    avg_x_byN, del_y_byN = gradient(x_new, y_new, N)[0], gradient(x_new, y_new, N)[1]
     counts, dis = np.histogram(del_y_byN, bins= 5)
     delta = abs(dis[0] - dis[2])
     peaks, _ = find_peaks(abs(del_y_byN), height=delta)
@@ -232,7 +233,7 @@ def Find_thepeak(x_new, y_new):
             np.delete(peaks, 0)
     return x, peaks
 
-def data_split_and_fit(x_new, y_new):
+def data_split_and_fit(x_new, y_new, xpeaks, N):
     '''
     D_1, D_2 分別裝切割後的 diff error func region of data.
     N : avg of N number data.
@@ -265,7 +266,7 @@ def data_split_and_fit(x_new, y_new):
     return D_1, D_2
 
 
-def append_all_k(D_1, D_2, mid_ofx):
+def append_all_k(D_1, D_2, mid_ofx, mid_y):
     '''
     fit error func and append all k.
     '''
@@ -273,28 +274,33 @@ def append_all_k(D_1, D_2, mid_ofx):
     if len(mid_ofx) == 0:
         print('ERROR mid_ofx is None')
     elif len(mid_ofx) == 1:
-        p = fit_error(x_new, y_new, mid_ofx[0])
+        p = fit_error(D_1, D_2, mid_ofx[0], mid_y)
         k_parameter.append(p[1])
     else:    
         for i, val in enumerate(mid_ofx):
-            p = fit_error(D_1[i], D_2[i], val)
+            p = fit_error(D_1[i], D_2[i], val, mid_y)
             k_parameter.append(p[1])
     return k_parameter
 
 def create_z_list(list_of_file):
     '''
-    list_of_file: [ ('file_name', speed, z),
-                    ('file_name', speed, z),
-                    ('file_name', speed, z) ]
+    list_of_file: [ 'file_name', 'file_name', 'file_name', ... ]
     '''
     z_list = []
     for i in list_of_file:
-        if i[2] not in z_list:
-            z_list.append(i[2])
+        if judgment_format(i)[2] not in z_list:
+            z_list.append( judgment_format(i)[2]
+                                                )
     return sorted(z_list, reverse = True) # z list 由大到小排列
 
 def main():
+
+    '''
+    Open folder and load all .txt file
+    '''
+
     spot_dependence_on_z = [] # 總檔案 list
+    chack_file_list = []
 
     list_of_file, folder_path = r_all_file()
     z_list = create_z_list(list_of_file) # 由大到小
@@ -303,34 +309,139 @@ def main():
     '''
     for i, ZZ in enumerate(z_list):
         spot_dependence_on_z.append([ZZ])
+        chack_file_list.append([ZZ])
+
         for f_name in list_of_file:  
-            if judgment_format(f_name)[2] == ZZ:
+            
+            file_name, speed, z_int = judgment_format(f_name)
+            absolute_file_path = f'{folder_path}/{file_name}' # 絕對路徑
+
+            if z_int == ZZ:
                 '''
-                z the same. Begine 
+                if z the same. Begine 
                 '''
-                absolute_file_path = f'{folder_path}/{f_name[0]}' # 絕對路徑
+                chack_file_list[i].append(file_name)
 
-                xdat_r, ydat_r     = read_file(absolute_file_path)
-                speed, z_component = f_name[1], f_name[2]
+                xdat_r, ydat_r          = read_file(absolute_file_path)
 
-                x_new, y_new, mid_y     = skip_noise(xdat_r, ydat_r)
-                avg_x_byN, del_y_byN, N = gradient(x_new, y_new, N)
-                mid_ofx, xpeaks         = Find_thepeak(x_new, y_new)
-                D_1, D_2                = data_split_and_fit(x_new, y_new) 
+                x_new, y_new            = skip_noise(xdat_r, ydat_r)
+                avg_x_byN, del_y_byN, N = gradient(x_new, y_new, 3)
+                mid_ofx, xpeaks         = Find_thepeak(x_new, y_new, N) # 與 gradient 綁在一起
+                D_1, D_2                = data_split_and_fit(x_new, y_new, xpeaks, N) # 與 Find_thepeak 綁在一起
 
-                k_parameters   = append_all_k(D_1, D_2, mid_ofx)
+                k_parameters   = append_all_k(D_1, D_2, mid_ofx, find_mid(x_new, y_new))
                 spot_size_list = calculate_spot_size(k_parameters, speed)
 
+                for spot_i in spot_size_list:
+                    spot_dependence_on_z[i].append( round(spot_i, 2) )
 
-            # fit error then calculate
- 
+### ----- chack point:  ----- ###
+    # print(chack_file_list)
+    # print(spot_dependence_on_z)   
+    return spot_dependence_on_z
+
+# ----- ------------ ----- # 
+# ----- tkinter func ----- # 
+
+
+def B1f():
+
+    spot_dependence_on_z = main()
+    row_N = len(spot_dependence_on_z)
+    
+    # Create an object of Style widget
+    style = ttk.Style()
+    style.theme_use('clam')
+    
+    # Add the rowheight
+    # style.configure('Treeview.Heading', rowheight=100) 
+    style.configure('Treeview.Heading', foreground='black', background='white', font=('Arial',18))
+    style.configure('Treeview', rowheight=20)
+    style.configure('Treeview', foreground='black', background='white', font=('Arial',16),)
+    
+    # Add a Treeview widget
+    tree = ttk.Treeview(win, columns=("1", "2", "3", "4"), 
+                        show='headings', height=row_N) # height: 多少列
+    tree.column( "# 1", minwidth=0, width=80, anchor='center')
+    tree.heading("# 1", text  ="z (um)")
+    tree.column( "# 2", minwidth=0, width=100, anchor='center')
+    tree.heading("# 2", text  ="spot size")
+    tree.column( "# 3", minwidth=0, width=100, anchor='center')
+    tree.heading("# 3", text  ="StD.")
+    tree.column( "# 4", minwidth=0, width=50, anchor='center')
+    tree.heading("# 4", text  ="N")
+
+    for i, list_i in enumerate(spot_dependence_on_z):
+        Z_vlal = list_i.pop(0)
+        all_spots = np.array(list_i)
+        spot_size_Avg = round( sum(all_spots) / len(all_spots), 2)
+        spot_size_StD = round( np.std(all_spots), 2)
+        N = len(all_spots)
+
+        tree.insert('', 'end', text=str(i+1), 
+                    values=(str(Z_vlal), str(spot_size_Avg), str(spot_size_StD), str(N))
+                    )
+    tree.pack()
+
+# def table_get_parameter():
+
+#     spot_dependence_on_z = main()
+#     row_N = len(spot_dependence_on_z)
+
+#     for i, list_i in enumerate(spot_dependence_on_z):
+#         Z_vlal = list_i.pop(0)
+#         all_spots = np.array(list_i)
+#         spot_size_Avg = round( sum(all_spots) / len(all_spots), 2)
+#         spot_size_StD = round( np.std(all_spots), 2)
+#         N = len(all_spots)
+#         return Z_vlal, spot_size_Avg, spot_size_StD, N, 
+
+
+# ----- tkinter windows -----
+
+win = tk.Tk()
+win.geometry("455x950")
+
+# Create an object of Style widget
+style = ttk.Style()
+style.theme_use('clam')
+
+# Add the rowheight
+# style.configure('Treeview.Heading', rowheight=100) 
+style.configure('Treeview.Heading', foreground='black', background='white', font=('Arial',18))
+style.configure('Treeview', rowheight=20)
+style.configure('Treeview', foreground='black', background='white', font=('Arial',16),)
+
+# Add a Treeview widget
+tree = ttk.Treeview(win, columns=("1", "2", "3", "4"), 
+                    show='headings', height=50)     # height: 多少列
+tree.column( "# 1", minwidth=0, width=80, anchor='center')
+tree.heading("# 1", text  ="z (um)")
+tree.column( "# 2", minwidth=0, width=100, anchor='center')
+tree.heading("# 2", text  ="spot size")
+tree.column( "# 3", minwidth=0, width=100, anchor='center')
+tree.heading("# 3", text  ="StD.")
+tree.column( "# 4", minwidth=0, width=50, anchor='center')
+tree.heading("# 4", text  ="N")
+
+for i, list_i in enumerate(spot_dependence_on_z):
+    Z_vlal = list_i.pop(0)
+    all_spots = np.array(list_i)
+    spot_size_Avg = round( sum(all_spots) / len(all_spots), 2)
+    spot_size_StD = round( np.std(all_spots), 2)
+    N = len(all_spots)
+
+    tree.insert('', 'end', text=str(i+1), 
+                values=(str(Z_vlal), str(spot_size_Avg), str(spot_size_StD), str(N))
+                )
+tree.pack()
+
+win.mainloop()
 
 
 
 
 
-
-main()
 
 
 
