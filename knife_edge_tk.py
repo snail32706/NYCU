@@ -1,6 +1,7 @@
 import tkinter as tk
 from tkinter import ttk
 import glob, os
+import platform
 import numpy as np
 import matplotlib.pyplot as plt
 plt.style.use('ggplot')
@@ -10,6 +11,7 @@ from IPython.display import display, Math, Latex
 from scipy.special import erf
 from scipy.optimize import curve_fit
 from scipy.signal import find_peaks
+
 
 # ------ --------- ------ #
 # ------ Load File ------ #
@@ -75,10 +77,17 @@ def judgment_format(file):
 
 def absolute_to_relative(absolute_file_path):
 
-    file_name = str(absolute_file_path)
-    for i in file_name.split('/'):
-        if 'txt' in i:
-            return i
+    if platform.system() == 'Darwin':
+        file_name = str(absolute_file_path)
+        for i in file_name.split('/'):
+            if 'txt' in i:
+                return i
+                
+    elif platform.system() == 'Windows':
+        file_name = str(absolute_file_path)
+        for i in file_name.split('\\'):
+            if 'txt' in i:
+                return i
 
 def read_file(file_name):
     '''
@@ -452,9 +461,10 @@ def B0f():
     r.place(relx=0.2, rely=0.78, relwidth=0.78, relheight=0.2) 
 
     if absolute_file_path is not None:
-        l = tk.Label(root, fg='#FFDC00', font=("Arial", 18),
-        text = f'Load Success!')
-        l.place(relx=0.02, rely=0.85, relwidth=0.16, relheight=0.05)
+        l = tk.Label(root, fg='#FFDC00', font=("Arial", 15),
+            text = f'Load Success!').place(relx=0.02, rely=0.85, relwidth=0.16, relheight=0.05)
+        r = tk.Label(root, bg='#C6C6C6', fg='#000000', font=("Arial", 15),
+            text = f'file name:\n{file_name}').place(relx=0.2, rely=0.78, relwidth=0.78, relheight=0.2) 
     else:
         tk.Label(root, text = '').place(relx=0.02, rely=0.85, relwidth=0.16, relheight=0.05)
         tk.Label(root, bg='#C6C6C6').place(relx=0.2, rely=0.78, relwidth=0.78, relheight=0.2) 
