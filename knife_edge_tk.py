@@ -520,6 +520,7 @@ def B3f():
     '''
     Fit Error func
     '''
+    tk.Label(root, bg='#C6C6C6').place(relx=0.2, rely=0.78, relwidth=0.78, relheight=0.2)  # cls 
     if absolute_file_path is None:
         tk.Label(root, text = 'load another file').place(relx=0.02, rely=0.85, relwidth=0.16, relheight=0.05)
         tk.Label(root, bg='#C6C6C6').place(relx=0.2, rely=0.78, relwidth=0.78, relheight=0.2) 
@@ -528,6 +529,7 @@ def B3f():
         file_name, speed, z_int, xdat_row, ydat_row, x_dat, y_dat, avg_x_byN, del_y_byN, mid_ofx, xpeaks, D_1, D_2 = FAS(absolute_file_path)
         k_parameters   = append_all_k(D_1, D_2, mid_ofx, find_midy(x_dat, y_dat))
         spot_size_list = calculate_spot_size(k_parameters, speed)
+
 
         ax.clear()
         ax.plot(x_dat, y_dat, 'b.',markersize = 5)
@@ -567,31 +569,62 @@ def B3f():
         la2 = tk.Label(root, textvariable=var2, bg='#C6C6C6', fg='#000000', font=("Arial", 18))
         var2.set("spot size: ")
         la2.place(relx=0.22, rely=0.87)
-        la3 = tk.Label(root, textvariable=var3, bg='#F0F0F0', fg='#850000', font=("Arial", 18), relief="ridge")
-        var3.set(speed)
-        la3.place(relx=0.32, rely=0.81)
 
+        if platform.system() == 'Darwin':
 
-        '''
-        Avoid too long values.
-        '''
-        if float(spot_size_Avg) > 100:
-            spot_size_Avg = round(spot_size_Avg, 1)
-        elif float(spot_size_Avg) > 1000:
-            spot_size_Avg = round(spot_size_Avg, 0)
+            la3 = tk.Label(root, textvariable=var3, bg='#F0F0F0', fg='#850000', font=("Arial", 18), relief="ridge")
+            var3.set(speed)
+            la3.place(relx=0.32, rely=0.81)
+            '''
+            Avoid too long values.
+            '''
+            if float(spot_size_Avg) > 100:
+                spot_size_Avg = round(spot_size_Avg, 1)
+            elif float(spot_size_Avg) > 1000:
+                spot_size_Avg = round(spot_size_Avg, 0)
+            if float(spot_size_Avg) > 100:
+                spot_size_Avg = round(spot_size_Avg, 1)
+            elif float(spot_size_Avg) > 1000:
+                spot_size_Avg = round(spot_size_Avg, 0)
 
-        # print spot size:
-        la4 = tk.Label(root, textvariable=var4, bg='#F0F0F0', fg='#BA1515', font=("Arial", 18), relief="ridge") 
-        var4.set(f'{spot_size_Avg} ± {spot_size_StD}')
-        la4.place(relx=0.32, rely=0.87)
+            # print spot size:
+            la4 = tk.Label(root, textvariable=var4, bg='#F0F0F0', fg='#BA1515', font=("Arial", 18), relief="ridge") 
+            var4.set(f'{spot_size_Avg} ± {spot_size_StD}')
+            la4.place(relx=0.32, rely=0.87)
 
-        la5 = tk.Label(root, textvariable=var5, bg='#C6C6C6', fg='#000000', font=("Arial", 18))
-        var5.set("um/s")
-        la5.place(relx=0.37, rely=0.81)
+            la5 = tk.Label(root, textvariable=var5, bg='#C6C6C6', fg='#000000', font=("Arial", 18))
+            var5.set("um/s")
+            la5.place(relx=0.37, rely=0.81)
 
-        la6 = tk.Label(root, textvariable=var6, bg='#C6C6C6', fg='#000000', font=("Arial", 18))
-        var6.set("um^2")
-        la6.place(relx=0.44, rely=0.87)
+            la6 = tk.Label(root, textvariable=var6, bg='#C6C6C6', fg='#000000', font=("Arial", 18))
+            var6.set("um^2")
+            la6.place(relx=0.44, rely=0.87)
+
+        elif platform.system() == 'Windows':
+
+            la3 = tk.Label(root, textvariable=var3, bg='#F0F0F0', fg='#850000', font=("Arial", 18), relief="ridge")
+            var3.set(speed)
+            la3.place(relx=0.34, rely=0.81)
+            '''
+            Avoid too long values.
+            '''
+            if float(spot_size_Avg) > 100:
+                spot_size_Avg = round(spot_size_Avg, 1)
+            elif float(spot_size_Avg) > 1000:
+                spot_size_Avg = round(spot_size_Avg, 0)
+
+            # print spot size:
+            la4 = tk.Label(root, textvariable=var4, bg='#F0F0F0', fg='#BA1515', font=("Arial", 18), relief="ridge") 
+            var4.set(f'{spot_size_Avg} ± {spot_size_StD}')
+            la4.place(relx=0.34, rely=0.87)
+
+            la5 = tk.Label(root, textvariable=var5, bg='#C6C6C6', fg='#000000', font=("Arial", 18))
+            var5.set("um/s")
+            la5.place(relx=0.4, rely=0.81)
+
+            la6 = tk.Label(root, textvariable=var6, bg='#C6C6C6', fg='#000000', font=("Arial", 18))
+            var6.set("um^2")
+            la6.place(relx=0.49, rely=0.87)
 
     # elif k_parameters == None:
         r.place(relx=0.2, rely=0.78, relwidth=0.78, relheight=0.2)
@@ -632,9 +665,9 @@ def B5f():
                         show='headings', height=50)     # height: 多少列
     tree.column( "# 1", minwidth=0, width=80, anchor='center')
     tree.heading("# 1", text  ="z (um)")
-    tree.column( "# 2", minwidth=0, width=100, anchor='center')
+    tree.column( "# 2", minwidth=0, width=130, anchor='center')
     tree.heading("# 2", text  ="spot size")
-    tree.column( "# 3", minwidth=0, width=100, anchor='center')
+    tree.column( "# 3", minwidth=0, width=90, anchor='center')
     tree.heading("# 3", text  ="StD.")
     tree.column( "# 4", minwidth=0, width=50, anchor='center')
     tree.heading("# 4", text  ="N")
