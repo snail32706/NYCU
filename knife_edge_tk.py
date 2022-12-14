@@ -72,6 +72,7 @@ def judgment_format(file):
         _ , z_component = ZZ.split('z')
         return file_name, int(speed), int(z_component)
 
+
 def absolute_to_relative(absolute_file_path):
 
     file_name = str(absolute_file_path)
@@ -198,6 +199,20 @@ def skip_noise(xdat, ydat):
             yy.append(ydat[i]) 
     return xx, yy
 
+def remove_bottom_noise(x_dat, y_dat):
+    '''
+    x_dat, y_dat is list. Result by "append"
+    '''
+    counts, dis = np.histogram(y_dat, bins= 5)  
+#     plt.stairs(counts, dis) # 可刪
+
+    if counts[0] < counts[1]:
+        for i in range(counts[0]):
+            idx = y_dat.index(min(y_dat))
+            x_dat.pop(idx) 
+            y_dat.pop(idx) 
+#     plt_xy(x_dat, y_dat, '.')
+    return x_dat, y_dat
 
 def gradient(x, y, N):
     '''
@@ -230,75 +245,83 @@ def gradient(x, y, N):
     del_y_byN = np.array(y_grad)
     return avg_x_byN, del_y_byN, N
 
-def Find_thepeak(x_new, y_new, N):
+def Find_thepeak(x_dat, y_dat, N):
 
-    avg_x_byN, del_y_byN = gradient(x_new, y_new, N)[0], gradient(x_new, y_new, N)[1]
+    avg_x_byN, del_y_byN = gradient(x_dat, y_dat, N)[0], gradient(x_dat, y_dat, N)[1]
     counts, dis = np.histogram(del_y_byN, bins= 5)
     delta = abs(dis[0] - dis[2])
     peaks, _ = find_peaks(abs(del_y_byN), height=delta)
-    # '''
-    # find peak 找到鄰近的值，需要移除
-    # '''
-    if len(peaks) != 1:
+    '''
+    peaks 鄰近值比大小
+    '''
+    peaks_list = peaks.tolist()
+    if len(peaks) > 1:
         for i, val in enumerate(peaks):
             if i == 0:
                 pass
             elif abs(val - peaks[i-1]) < N*20 :
-                peaks = np.delete(peaks, i)
+                peaks_list.remove(  min(abs(val), abs(peaks[i-1]))   )
+    peaks = np.array(peaks_list)
+
     x, y = [], []   
     for i in peaks:
-        x.append(x_new[i*N+3])   
-        y.append(y_new[i*N+3])
+        x.append(x_dat[i*N+3])   
+        y.append(y_dat[i*N+3])
+    
     x_period_pixel = None
     if len(peaks) == 0:
         print('Error at find peaks! There is no peaks')
-    elif len(peaks) == 1:
-        pass
-    elif len(peaks) == 2:
-        x_period_pixel  = peaks[1] - peaks[0]
     else:
-        x_period_1  = peaks[1] - peaks[0]
-        x_period_2  = peaks[2] - peaks[1]
-        if x_period_1 > x_period_2:
-            x_period_pixel = x_period_2
+        peak_end = peaks[len(peaks)-1]
+        
+        if len(peaks) == 1:
+            pass
+        elif len(peaks) == 2:
+            x_period_pixel  = peaks[1] - peaks[0]
         else:
-            x_period_pixel = x_period_1      
-    peak_end = peaks[len(peaks)-1]
+            x_period_1  = peaks[1] - peaks[0]
+            x_period_2  = peaks[2] - peaks[1]
+            if x_period_1 > x_period_2:
+                x_period_pixel = x_period_2
+            else:
+                x_period_pixel = x_period_1      
+
     if x_period_pixel != None:
         if len(del_y_byN) - peak_end < x_period_pixel/10:
             np.delete(peaks, len(peaks)-1)
         if peaks[0] < x_period_pixel/10:
             np.delete(peaks, 0)
+            
     return x, peaks
 
-def data_split_and_fit(x_new, y_new, xpeaks, N):
+def data_split_and_fit(x_dat, y_dat, xpeaks, N):
     '''
     D_1, D_2 分別裝切割後的 diff error func region of data.
     N : avg of N number data.
     '''
     D_1, D_2 = [], []
     if len(xpeaks) == 1:
-        D_1 = x_new
-        D_2 = y_new
+        D_1 = x_dat
+        D_2 = y_dat
     else:
         for i, xval in enumerate(xpeaks):
             if i == 0:
                 peak_mid = int( (xpeaks[i]+xpeaks[i+1])/2 )
-                x = x_new[0:peak_mid*N]
-                y = y_new[0:peak_mid*N]
+                x = x_dat[0:peak_mid*N]
+                y = y_dat[0:peak_mid*N]
                 D_1.append(x)
                 D_2.append(y)
             elif i != len(xpeaks)-1:
                 peak_mid1 = int( (xpeaks[i-1]+xpeaks[i])/2 )
                 peak_mid2 = int( (xpeaks[i]+xpeaks[i+1])/2 )
-                x = x_new[peak_mid1*N:peak_mid2*N]
-                y = y_new[peak_mid1*N:peak_mid2*N]
+                x = x_dat[peak_mid1*N:peak_mid2*N]
+                y = y_dat[peak_mid1*N:peak_mid2*N]
                 D_1.append(x)
                 D_2.append(y)
             elif i == len(xpeaks)-1:
                 peak_mid = int( (xpeaks[i-1]+xpeaks[i])/2 )
-                x = x_new[peak_mid*N:]
-                y = y_new[peak_mid*N:]
+                x = x_dat[peak_mid*N:]
+                y = y_dat[peak_mid*N:]
                 D_1.append(x)
                 D_2.append(y)
     return D_1, D_2
@@ -337,7 +360,7 @@ def main():
     '''
 
     spot_dependence_on_z = [] # 總檔案 list
-    chack_file_list = []
+    chack_file_list, proplem_list = [], []
 
     list_of_file, folder_path = r_all_file()
     z_list = create_z_list(list_of_file) # 由大到小
@@ -361,17 +384,20 @@ def main():
 
                 xdat_r, ydat_r          = read_file(absolute_file_path)
 
-                x_new, y_new            = skip_noise(xdat_r, ydat_r)
-                avg_x_byN, del_y_byN, N = gradient(x_new, y_new, 3)
-                mid_ofx, xpeaks         = Find_thepeak(x_new, y_new, N) # 與 gradient 綁在一起
-                D_1, D_2                = data_split_and_fit(x_new, y_new, xpeaks, N) # 與 Find_thepeak 綁在一起
+                try:
+                    x_dat, y_dat            = skip_noise(xdat_r, ydat_r)
+                    avg_x_byN, del_y_byN, N = gradient(x_dat, y_dat, 3)
+                    mid_ofx, xpeaks         = Find_thepeak(x_dat, y_dat, N) # 與 gradient 綁在一起
+                    D_1, D_2                = data_split_and_fit(x_dat, y_dat, xpeaks, N) # 與 Find_thepeak 綁在一起
 
-                k_parameters   = append_all_k(D_1, D_2, mid_ofx, find_midy(x_new, y_new))
-                spot_size_list = calculate_spot_size(k_parameters, speed)
+                    k_parameters   = append_all_k(D_1, D_2, mid_ofx, find_midy(x_dat, y_dat))
+                    spot_size_list = calculate_spot_size(k_parameters, speed)
+                    for spot_i in spot_size_list:
+                        spot_dependence_on_z[i].append( round(spot_i, 2) )
+                except:
+                    proplem_list.append(file_name)
 
-                for spot_i in spot_size_list:
-                    spot_dependence_on_z[i].append( round(spot_i, 2) )
-    return spot_dependence_on_z
+    return spot_dependence_on_z, proplem_list
 
 def FAS(file, get_row_data=None):
     '''
@@ -379,15 +405,17 @@ def FAS(file, get_row_data=None):
     analysis and split
     '''
     if get_row_data == None:
+
         file_name       = absolute_to_relative(file)
         _, speed, z_int = judgment_format(file_name)
 
         xdat_row, ydat_row      = read_file(file)
-        x_new, y_new            = skip_noise(xdat_row, ydat_row)
-        avg_x_byN, del_y_byN, N = gradient(x_new, y_new, 3)
-        mid_ofx, xpeaks         = Find_thepeak(x_new, y_new, N) # 與 gradient 綁在一起
-        D_1, D_2                = data_split_and_fit(x_new, y_new, xpeaks, N) # 與 Find_thepeak 綁在一起
-        return file_name, speed, z_int, xdat_row, ydat_row, x_new, y_new, avg_x_byN, del_y_byN, mid_ofx, xpeaks, D_1, D_2
+        x_dat, y_dat            = skip_noise(xdat_row, ydat_row)
+        x_dat, y_dat            = remove_bottom_noise(x_dat, y_dat)
+        avg_x_byN, del_y_byN, N = gradient(x_dat, y_dat, 3)
+        mid_ofx, xpeaks         = Find_thepeak(x_dat, y_dat, N) # 與 gradient 綁在一起
+        D_1, D_2                = data_split_and_fit(x_dat, y_dat, xpeaks, N) # 與 Find_thepeak 綁在一起
+        return file_name, speed, z_int, xdat_row, ydat_row, x_dat, y_dat, avg_x_byN, del_y_byN, mid_ofx, xpeaks, D_1, D_2
 
     elif get_row_data == 'yes':
         file_name           = absolute_to_relative(file)
@@ -406,76 +434,113 @@ def B0f():
     '''
     global absolute_file_path
 
-    absolute_file_path = open_file()
-    file_name, xdat_row, ydat_row,= FAS(absolute_file_path, 'yes')
-    ax.clear()
-    ax.set_xlabel("time (s)")
-    ax.set_ylabel("signal (a.u.)")
-    ax.plot(xdat_row, ydat_row, 'b.',markersize = 4), ax.grid(True)
-    line.draw() 
+    try:
+        absolute_file_path = open_file()
+        file_name, xdat_row, ydat_row,= FAS(absolute_file_path, 'yes')
+        ax.clear()
+        ax.set_xlabel("time (s)")
+        ax.set_ylabel("signal (a.u.)")
+        ax.plot(xdat_row, ydat_row, 'b.',markersize = 4), ax.grid(True)
+        line.draw() 
+    except:
+        absolute_file_path = None
+        ax.clear()
+        line.draw() 
 
     # clear lower right corner
     r = tk.Label(root, bg='#C6C6C6') 
     r.place(relx=0.2, rely=0.78, relwidth=0.78, relheight=0.2) 
 
-    l = tk.Label(root, fg='#FFDC00', font=("Arial", 18),
-    text = f'Load Success!')
-    l.place(relx=0.02, rely=0.85, relwidth=0.16, relheight=0.05)
+    if absolute_file_path is not None:
+        l = tk.Label(root, fg='#FFDC00', font=("Arial", 18),
+        text = f'Load Success!')
+        l.place(relx=0.02, rely=0.85, relwidth=0.16, relheight=0.05)
+    else:
+        tk.Label(root, text = '').place(relx=0.02, rely=0.85, relwidth=0.16, relheight=0.05)
+        tk.Label(root, bg='#C6C6C6').place(relx=0.2, rely=0.78, relwidth=0.78, relheight=0.2) 
 
 def B1f():
     '''
     show processing data
     '''  
+    if absolute_file_path is None:
+        tk.Label(root, text = 'load another file').place(relx=0.02, rely=0.85, relwidth=0.16, relheight=0.05)
+        tk.Label(root, bg='#C6C6C6').place(relx=0.2, rely=0.78, relwidth=0.78, relheight=0.2) 
+        open_popup1()
+    try:
+        file_name, speed, z_int, xdat_row, ydat_row, x_dat, y_dat, avg_x_byN, del_y_byN, mid_ofx, xpeaks, D_1, D_2 = FAS(absolute_file_path)
+        ax.clear()
+        ax.set_xlabel("time (s)")
+        ax.set_ylabel("signal (a.u.)")
+        ax.plot(x_dat, y_dat, 'b.',markersize = 4), ax.grid(True)
+        line.draw()   
 
-    file_name, speed, z_int, xdat_row, ydat_row, x_new, y_new, avg_x_byN, del_y_byN, mid_ofx, xpeaks, D_1, D_2 = FAS(absolute_file_path)
-
-    ax.clear()
-    ax.set_xlabel("time (s)")
-    ax.set_ylabel("signal (a.u.)")
-    ax.plot(x_new, y_new, 'b.',markersize = 4), ax.grid(True)
-    line.draw()   
+    except:
+        file_name, xdat_row, ydat_row,= FAS(absolute_file_path, 'yes')
+        tk.Label(root, text = 'load another file').place(relx=0.02, rely=0.85, relwidth=0.16, relheight=0.05)
+        tk.Label(root, bg='#C6C6C6').place(relx=0.2, rely=0.78, relwidth=0.78, relheight=0.2) 
+        open_popup2(file_name)  
 
 def B2f():
     '''
     show gradient and peaks.
     '''
-    file_name, speed, z_int, xdat_row, ydat_row, x_new, y_new, avg_x_byN, del_y_byN, mid_ofx, xpeaks, D_1, D_2 = FAS(absolute_file_path)
-
-    ax.clear()
-    ax.set_xlabel("time (s)")
-    ax.set_ylabel("signal (a.u.)")
-    ax.plot(avg_x_byN, abs(del_y_byN), 'b.-',markersize = 4), ax.grid(True)
-    # ax.scatter(x, y, s=area, c=colors, alpha=0.5)
-    for i in xpeaks:
-        ax.scatter(avg_x_byN[i], abs(del_y_byN)[i], s=8**2, c='r', alpha=0.5)
-    line.draw()    
+    if absolute_file_path is None:
+        tk.Label(root, text = 'load another file').place(relx=0.02, rely=0.85, relwidth=0.16, relheight=0.05)
+        tk.Label(root, bg='#C6C6C6').place(relx=0.2, rely=0.78, relwidth=0.78, relheight=0.2) 
+        open_popup1()
+    try:
+        file_name, speed, z_int, xdat_row, ydat_row, x_dat, y_dat, avg_x_byN, del_y_byN, mid_ofx, xpeaks, D_1, D_2 = FAS(absolute_file_path)
+        ax.clear()
+        ax.set_xlabel("time (s)")
+        ax.set_ylabel("signal (a.u.)")
+        ax.plot(avg_x_byN, abs(del_y_byN), 'b.-',markersize = 4), ax.grid(True)
+        # ax.scatter(x, y, s=area, c=colors, alpha=0.5)
+        for i in xpeaks:
+            ax.scatter(avg_x_byN[i], abs(del_y_byN)[i], s=8**2, c='r', alpha=0.5)
+        line.draw()    
+    except:
+        file_name, xdat_row, ydat_row,= FAS(absolute_file_path, 'yes')
+        tk.Label(root, text = 'load another file').place(relx=0.02, rely=0.85, relwidth=0.16, relheight=0.05)
+        tk.Label(root, bg='#C6C6C6').place(relx=0.2, rely=0.78, relwidth=0.78, relheight=0.2) 
+        open_popup2(file_name)  
 
 def B3f():
     
     '''
     Fit Error func
     '''
-    file_name, speed, z_int, xdat_row, ydat_row, x_new, y_new, avg_x_byN, del_y_byN, mid_ofx, xpeaks, D_1, D_2 = FAS(absolute_file_path)
-    k_parameters   = append_all_k(D_1, D_2, mid_ofx, find_midy(x_new, y_new))
-    spot_size_list = calculate_spot_size(k_parameters, speed)
+    if absolute_file_path is None:
+        tk.Label(root, text = 'load another file').place(relx=0.02, rely=0.85, relwidth=0.16, relheight=0.05)
+        tk.Label(root, bg='#C6C6C6').place(relx=0.2, rely=0.78, relwidth=0.78, relheight=0.2) 
+        open_popup1()
+    try:
+        file_name, speed, z_int, xdat_row, ydat_row, x_dat, y_dat, avg_x_byN, del_y_byN, mid_ofx, xpeaks, D_1, D_2 = FAS(absolute_file_path)
+        k_parameters   = append_all_k(D_1, D_2, mid_ofx, find_midy(x_dat, y_dat))
+        spot_size_list = calculate_spot_size(k_parameters, speed)
 
-    ax.clear()
-    ax.plot(x_new, y_new, 'b.',markersize = 5)
-    ax.set_xlabel("time (s)")
-    ax.set_ylabel("signal (a.u.)")
-    ax.set_title("fit: a * erf(k * (x - x0)) + y0")
-    c = ['#B22222', '#CD9B1D', '#FF7D40', '#FFC125', '#FF3030', '#FFC125', 
-        '#B22222', '#CD9B1D', '#FF7D40', '#FFC125', '#FF3030', '#FFC125'] # color code for fit diff curve
-    if len(mid_ofx) == 1:
-            p = fit_error(x_new, y_new, mid_ofx[0], find_midy(x_new, y_new))
-            a, k, x0, y0 = p[0], p[1], p[2], p[3]
-            ax.plot(x_new, myerf(x_new, a, k, x0, y0), color=c[0], linewidth=8, alpha=0.5)
-    else:    
-        for i, val in enumerate(mid_ofx):
-            p = fit_error(D_1[i], D_2[i], val, find_midy(x_new, y_new))
-            a, k, x0, y0 = p[0], p[1], p[2], p[3]
-            ax.plot(D_1[i], myerf(D_1[i], a, k, x0, y0), color=c[i] , linewidth=8, alpha=0.5)
-    line.draw()  
+        ax.clear()
+        ax.plot(x_dat, y_dat, 'b.',markersize = 5)
+        ax.set_xlabel("time (s)")
+        ax.set_ylabel("signal (a.u.)")
+        ax.set_title("fit: a * erf(k * (x - x0)) + y0")
+        c = ['#B22222', '#CD9B1D', '#FF7D40', '#FFC125', '#FF3030', '#FFC125', 
+            '#B22222', '#CD9B1D', '#FF7D40', '#FFC125', '#FF3030', '#FFC125'] # color code for fit diff curve
+        if len(mid_ofx) == 1:
+                p = fit_error(x_dat, y_dat, mid_ofx[0], find_midy(x_dat, y_dat))
+                a, k, x0, y0 = p[0], p[1], p[2], p[3]
+                ax.plot(x_dat, myerf(x_dat, a, k, x0, y0), color=c[0], linewidth=8, alpha=0.5)
+        else:    
+            for i, val in enumerate(mid_ofx):
+                p = fit_error(D_1[i], D_2[i], val, find_midy(x_dat, y_dat))
+                a, k, x0, y0 = p[0], p[1], p[2], p[3]
+                ax.plot(D_1[i], myerf(D_1[i], a, k, x0, y0), color=c[i] , linewidth=8, alpha=0.5)
+        line.draw()  
+    except:
+        file_name, xdat_row, ydat_row,= FAS(absolute_file_path, 'yes')
+        tk.Label(root, text = 'load another file').place(relx=0.02, rely=0.85, relwidth=0.16, relheight=0.05)
+        tk.Label(root, bg='#C6C6C6').place(relx=0.2, rely=0.78, relwidth=0.78, relheight=0.2) 
+        open_popup2(file_name)  
 
     if k_parameters is not None:
 
@@ -528,12 +593,15 @@ def B4f():
     ax.axis('off')
     line.draw() 
 
-    r = tk.Label(root, bg='#C6C6C6') 
-    r.place(relx=0.2, rely=0.78, relwidth=0.78, relheight=0.2) 
+    tk.Label(root, text = '').place(relx=0.02, rely=0.85, relwidth=0.16, relheight=0.05)
+    tk.Label(root, bg='#C6C6C6').place(relx=0.2, rely=0.78, relwidth=0.78, relheight=0.2) 
 
 def B5f():
+    # cls first
+    tk.Label(root, text = '').place(relx=0.02, rely=0.85, relwidth=0.16, relheight=0.05)
+    tk.Label(root, bg='#C6C6C6').place(relx=0.2, rely=0.78, relwidth=0.78, relheight=0.2) 
 
-    spot_dependence_on_z = main()
+    spot_dependence_on_z, proplem_list = main()
     row_N = len(spot_dependence_on_z)
 
     top = tk.Toplevel(root)
@@ -573,6 +641,21 @@ def B5f():
                     )
     tree.pack()
 
+
+# --- pop window --- #
+def open_popup1():
+   top = tk.Toplevel(root)
+   top.geometry("300x250")
+   top.title("Error!")
+   tk.Label(top, fg='#FF0000', text= 'Plz load file first', 
+            font=('Mistral 20 bold')).place(x=150,y=125, anchor="center")
+
+def open_popup2(file_name):
+   top = tk.Toplevel(root)
+   top.geometry("500x250")
+   top.title("Analyze Error!")
+   word = f'{file_name}\nAnalyze Error!'
+   tk.Label(top, fg='#FF0000', text= word , font=('Mistral 18 bold')).place(x=250,y=125, anchor="center")
 
 #--- Raiz ---
 root = tk.Tk()
