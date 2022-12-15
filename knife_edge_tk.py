@@ -11,26 +11,10 @@ from IPython.display import display, Math, Latex
 from scipy.special import erf
 from scipy.optimize import curve_fit
 from scipy.signal import find_peaks
-import math
 
 
 # ------ --------- ------ #
 # ------ Load File ------ #
-
-def rename():
-    
-#     folder_path = '/Users/k.y.chen/Desktop/huan file/20221118'     # 刪除
-
-    folder_path = load_path()
-
-    list_of_file = []
-    os.chdir(folder_path)
-    i = 17
-    for file in glob.glob("*.txt"):
-        old_name = file
-        new_name = f'{folder_path}/s100_z{i}_{old_name}'
-        os.rename(old_name, new_name)
-        i += 1
 
 def open_file(): 
     '''
@@ -73,8 +57,8 @@ def r_all_file():
     return list_of_file, folder_path 
     
 def load_path():
-    # root = tk.Tk()
-    # root.withdraw()
+    root = tk.Tk()
+    root.withdraw()
     folder_path = tk.filedialog.askdirectory()
     return folder_path
 
@@ -84,14 +68,12 @@ def judgment_format(file):
     [ file_name, speed, z ]  >> type: str, int, int
     '''
     file_name = str(file)
-    try:
-        if file_name[0] == 's':
-            SS, ZZ, _ = file_name.split('_')
-            _ , speed = SS.split('s')
-            _ , z_component = ZZ.split('z')
-            return file_name, int(speed), int(z_component)
-    except:
-        pass
+    if file_name[0] == 's':
+        SS, ZZ, _ = file_name.split('_')
+        _ , speed = SS.split('s')
+        _ , z_component = ZZ.split('z')
+        return file_name, int(speed), int(z_component)
+
 
 def absolute_to_relative(absolute_file_path):
 
@@ -193,112 +175,51 @@ def find_midy(xdat, ydat):
     mid_y = (dis[max1] + dis[max2]) / 2
     return mid_y
 
-# def skip_noise(xdat, ydat):
-
-#     # First step:
-#     counts, dis = np.histogram(ydat, bins= 15)
-#      # plt.stairs(counts, dis) # 可刪
-#     region = []
-#     for i, val in enumerate(counts):
-#         if val > 50:
-#             region.append(dis[i])
-#             region.append(dis[i+1])
-#     N = int(len(region)/2)
-#     s_x, s_y = [], []
-#     for i in range(N):
-#         s_x.append([])
-#         s_y.append([]) # f'region{i+1}:'
-    
-#     for i, val in enumerate(ydat):
-#         for j in range(N):
-#             if j == 0:
-#                 if val < region[2*j+1]:
-#                     s_x[j].append(xdat[i])
-#                     s_y[j].append(ydat[i]) 
-#             elif j == N-1:
-#                 if val > region[2*j]:
-#                     s_x[j].append(xdat[i])
-#                     s_y[j].append(ydat[i]) 
-#             else:
-#                 if val > region[2*j] and val < region[2*j+1]:
-#                     s_x[j].append(xdat[i])
-#                     s_y[j].append(ydat[i]) 
-#     noise = []
-#     for j in range(N):
-#         delta = 0
-#         for i, val in enumerate(s_x[j]):
-#             if i == 0:
-#                 delta = abs(s_x[j][i] - xdat[0]) if abs(s_x[j][i] - min(xdat)) > abs(s_x[j][len(s_x[j])-1] - xdat[len(xdat)-1]) else abs(s_x[j][len(s_x[j])-1] - xdat[len(xdat)-1])
-#             else:    
-#                 delta = abs(s_x[j][i] - s_x[j][i-1]) if abs(s_x[j][i] - s_x[j][i-1]) > delta else delta
-#         if delta < (max(xdat) - min(xdat)) / 100:
-#             if len(noise) == 0:
-#                 noise = s_x[j]
-#             else:
-#                 noise += s_x[j]
-                
-#     x_new, y_new = [], []       
-#     for i, val in enumerate(xdat):  
-#         if val not in noise:
-#             x_new.append(val)
-#             y_new.append(ydat[i])
-#     return x_new, y_new
-
 def skip_noise(xdat, ydat):
     
+    '''
+    First:
+    Find the noisce data. Useing histogram to find noise.
+    
+    Second:
+    Using noise range (noise_bottom ~ noise_top) skip the noise data.
+    '''
+
     # First step:
-    N_split = int(10)
-    counts, dis = np.histogram(ydat, bins= N_split)   
-#     plt.stairs(counts, dis) # 可刪
+    counts, dis = np.histogram(ydat, bins= 10)    
     _y = counts.tolist()
     max_index = _y.index(max(counts)) 
+    delta = float(format(dis[1] - dis[0], '.7f'))
     
-    noise_top, noise_bottom = dis[max_index+1], dis[max_index]
+    noise_top = dis[max_index] + delta/2
+    noise_bottom = dis[max_index] - delta/2
     
     # Second step:
+    '''
+    noise might be two line.
+    i need to skip all of it.
+    '''
     xx, yy = [], []
-    if max_index == N_split-1:
-        for i, val in enumerate(ydat):
-            if val > noise_bottom:
-                pass
-            else:
-                xx.append(xdat[i])
-                yy.append(ydat[i]) 
-    elif max_index == 0:
-        for i, val in enumerate(ydat):
-            if val < noise_top:
-                pass
-            else:
-                xx.append(xdat[i])
-                yy.append(ydat[i]) 
+    yyy = sorted(  ydat.tolist()  )
+    for i, val_y in enumerate(ydat):
+        if val_y > yyy[counts[0]]:
+            xx.append(xdat[i])
+            yy.append(ydat[i]) 
     return xx, yy
 
-def remove_top_bottom_noise(x_dat, y_dat):
+def remove_bottom_noise(x_dat, y_dat):
     '''
     x_dat, y_dat is list. Result by "append"
     '''
-    CC = 0
-    while True:
-        counts, dis = np.histogram(y_dat, bins= 5)  
-        # plt.stairs(counts, dis) # 可刪
+    counts, dis = np.histogram(y_dat, bins= 5)  
+#     plt.stairs(counts, dis) # 可刪
 
-        if counts[0] < counts[1]:
-            for i in range(counts[0]):
-                idx = y_dat.index(min(y_dat))
-                x_dat.pop(idx) 
-                y_dat.pop(idx) 
-        elif counts[4] < counts[3]:
-    #         print('T')
-            for i in range(counts[4]):
-                idx = y_dat.index(max(y_dat))
-                x_dat.pop(idx) 
-                y_dat.pop(idx) 
-        elif counts[0] > counts[1] and counts[4] > counts[3]:
-            break
-        elif CC > 10:
-            break
-    # plt_xy(x_dat, y_dat, '.')
-    # print(CC)
+    if counts[0] < counts[1]:
+        for i in range(counts[0]):
+            idx = y_dat.index(min(y_dat))
+            x_dat.pop(idx) 
+            y_dat.pop(idx) 
+#     plt_xy(x_dat, y_dat, '.')
     return x_dat, y_dat
 
 def gradient(x, y, N):
@@ -472,7 +393,6 @@ def main():
 
                 try:
                     x_dat, y_dat            = skip_noise(xdat_r, ydat_r)
-                    x_dat, y_dat            = remove_top_bottom_noise(x_dat, y_dat)
                     avg_x_byN, del_y_byN, N = gradient(x_dat, y_dat, 3)
                     mid_ofx, xpeaks         = Find_thepeak(x_dat, y_dat, N) # 與 gradient 綁在一起
                     D_1, D_2                = data_split_and_fit(x_dat, y_dat, xpeaks, N) # 與 Find_thepeak 綁在一起
@@ -486,97 +406,44 @@ def main():
 
     return spot_dependence_on_z, proplem_list
 
-def plt_all():
-    
-    # plt start:
-    fig_N = len(list_of_file)
-    row = math.ceil(fig_N/7) if math.ceil(fig_N/7) != 0 else 1
-    fig, axes = plt.subplots(row, 7, figsize=(18, 2*row), dpi=100)
-    fig.subplots_adjust(wspace = .3)  # hspace = .45, 
-    axes = axes.ravel()
-    c = ['#B22222', '#CD9B1D', '#FF7D40', '#FFC125', '#FF3030', '#FFC125', 
-        '#B22222', '#CD9B1D', '#FF7D40', '#FFC125', '#FF3030', '#FFC125']
-
-    for K, file_name in enumerate(list_of_file):
-        absolute_file_path = f'{folder_path}/{file_name}' # 絕對路徑
-
-        Name_i, Name_f = file_name[ :int(len(file_name)/2)], file_name[int(len(file_name)/2): ]
-        axes[K].set_title(f'{Name_i}\n{Name_f}', fontsize=8)
-        try: 
-            file_name, speed, z_int, xdat_row, ydat_row, x_dat, y_dat, avg_x_byN, del_y_byN, mid_ofx, xpeaks, D_1, D_2 = FAS(absolute_file_path, plt_all='y')
-            k_parameters   = append_all_k(D_1, D_2, mid_ofx, find_midy(x_dat, y_dat))
-            axes[K].axis('off')
-            # axes[K].set_title(f'{file_name}', fontsize=8)
-            axes[K].plot(xdat_row, ydat_row, 'k.',markersize = 0.5)
-            axes[K].plot(x_dat, y_dat, 'k.',markersize = 2)
-            if len(mid_ofx) == 1:
-                    p = fit_error(x_dat, y_dat, mid_ofx[0], find_midy(x_dat, y_dat))
-                    a, k, x0, y0 = p[0], p[1], p[2], p[3]
-                    axes[K].plot(x_dat, myerf(x_dat, a, k, x0, y0), color=c[0], linewidth=8, alpha=0.5)
-                    # plt.show()
-            else:
-                for i, val in enumerate(mid_ofx):
-                    p = fit_error(D_1[i], D_2[i], val, find_midy(x_dat, y_dat))
-                    a, k, x0, y0 = p[0], p[1], p[2], p[3]
-                    axes[K].plot(D_1[i], myerf(D_1[i], a, k, x0, y0), color=c[i] , linewidth=8, alpha=0.5)
-        except:
-            file_name, xdat_row, ydat_row,= FAS(absolute_file_path, get_row_data='yes', plt_all='y')
-            axes[K].plot(xdat_row, ydat_row, 'b.',markersize = 2)
-            axes[K].axis('off')
-
-    plt.show()
-
-
-def FAS(file, get_row_data=None, plt_all=None):
+def FAS(file, get_row_data=None):
     '''
     file : put absolute path
     analysis and split
     '''
-    file_name       = absolute_to_relative(file)
-    xdat_row, ydat_row      = read_file(file)
-    
-    if plt_all is None:
-        global x_new_G, y_new_G
-    else:
-        x_new_G, y_new_G = None, None
-
     if get_row_data == None:
-        _, speed, z_int = judgment_format(file_name)        
-        
-        if x_new_G is None:
-            x_dat, y_dat            = skip_noise(xdat_row, ydat_row)
-            x_dat, y_dat            = remove_top_bottom_noise(x_dat, y_dat)
-            x_new_G, y_new_G        = remove_top_bottom_noise(x_dat, y_dat)
-            avg_x_byN, del_y_byN, N = gradient(x_new_G, y_new_G, 3)
-            mid_ofx, xpeaks         = Find_thepeak(x_new_G, y_new_G, N) # 與 gradient 綁在一起
-            D_1, D_2                = data_split_and_fit(x_new_G, y_new_G, xpeaks, N) # 與 Find_thepeak 綁在一起
-            return file_name, speed, z_int, xdat_row, ydat_row, x_new_G, y_new_G, avg_x_byN, del_y_byN, mid_ofx, xpeaks, D_1, D_2
-        else:
-            avg_x_byN, del_y_byN, N = gradient(x_new_G, y_new_G, 3)
-            mid_ofx, xpeaks         = Find_thepeak(x_new_G, y_new_G, N) # 與 gradient 綁在一起
-            D_1, D_2                = data_split_and_fit(x_new_G, y_new_G, xpeaks, N) # 與 Find_thepeak 綁在一起
-            return file_name, speed, z_int, xdat_row, ydat_row, x_new_G, y_new_G, avg_x_byN, del_y_byN, mid_ofx, xpeaks, D_1, D_2
-        
+
+        file_name       = absolute_to_relative(file)
+        _, speed, z_int = judgment_format(file_name)
+
+        xdat_row, ydat_row      = read_file(file)
+        x_dat, y_dat            = skip_noise(xdat_row, ydat_row)
+        x_dat, y_dat            = remove_bottom_noise(x_dat, y_dat)
+        avg_x_byN, del_y_byN, N = gradient(x_dat, y_dat, 3)
+        mid_ofx, xpeaks         = Find_thepeak(x_dat, y_dat, N) # 與 gradient 綁在一起
+        D_1, D_2                = data_split_and_fit(x_dat, y_dat, xpeaks, N) # 與 Find_thepeak 綁在一起
+        return file_name, speed, z_int, xdat_row, ydat_row, x_dat, y_dat, avg_x_byN, del_y_byN, mid_ofx, xpeaks, D_1, D_2
+
     elif get_row_data == 'yes':
+        file_name           = absolute_to_relative(file)
+        xdat_row, ydat_row  = read_file(file)
         return file_name, xdat_row, ydat_row
 
 
 # ------ ------------ ------ # 
 # ------ tkinter func ------ # 
 
-x_new_G, y_new_G = None, None
 absolute_file_path = None # 唯一 global variable
 
 def B0f():
     '''
     load row data and show
     '''
-    global absolute_file_path, x_new_G, y_new_G
+    global absolute_file_path
 
     try:
         absolute_file_path = open_file()
-        file_name, xdat_row, ydat_row,= FAS(absolute_file_path, get_row_data='yes')
-        x_new_G, y_new_G = None, None
+        file_name, xdat_row, ydat_row,= FAS(absolute_file_path, 'yes')
         ax.clear()
         ax.set_xlabel("time (s)")
         ax.set_ylabel("signal (a.u.)")
@@ -584,7 +451,6 @@ def B0f():
         line.draw() 
     except:
         absolute_file_path = None
-        x_new_G, y_new_G = None, None
         ax.clear()
         line.draw() 
 
@@ -618,7 +484,7 @@ def B1f():
         line.draw()   
 
     except:
-        file_name, xdat_row, ydat_row,= FAS(absolute_file_path, get_row_data='yes')
+        file_name, xdat_row, ydat_row,= FAS(absolute_file_path, 'yes')
         tk.Label(root, text = 'load another file').place(relx=0.02, rely=0.85, relwidth=0.16, relheight=0.05)
         tk.Label(root, bg='#C6C6C6').place(relx=0.2, rely=0.78, relwidth=0.78, relheight=0.2) 
         open_popup2(file_name)  
@@ -642,7 +508,7 @@ def B2f():
             ax.scatter(avg_x_byN[i], abs(del_y_byN)[i], s=8**2, c='r', alpha=0.5)
         line.draw()    
     except:
-        file_name, xdat_row, ydat_row,= FAS(absolute_file_path, get_row_data='yes')
+        file_name, xdat_row, ydat_row,= FAS(absolute_file_path, 'yes')
         tk.Label(root, text = 'load another file').place(relx=0.02, rely=0.85, relwidth=0.16, relheight=0.05)
         tk.Label(root, bg='#C6C6C6').place(relx=0.2, rely=0.78, relwidth=0.78, relheight=0.2) 
         open_popup2(file_name)  
@@ -681,7 +547,7 @@ def B3f():
                 ax.plot(D_1[i], myerf(D_1[i], a, k, x0, y0), color=c[i] , linewidth=8, alpha=0.5)
         line.draw()  
     except:
-        file_name, xdat_row, ydat_row,= FAS(absolute_file_path, get_row_data='yes')
+        file_name, xdat_row, ydat_row,= FAS(absolute_file_path, 'yes')
         tk.Label(root, text = 'load another file').place(relx=0.02, rely=0.85, relwidth=0.16, relheight=0.05)
         tk.Label(root, bg='#C6C6C6').place(relx=0.2, rely=0.78, relwidth=0.78, relheight=0.2) 
         open_popup2(file_name)  
@@ -693,23 +559,20 @@ def B3f():
         spot_size_StD = round( np.std(all_spots), 2)
         N = len(all_spots)
 
-        # r = tk.Label(root, bg='#C6C6C6', fg='#000000', font=("Arial", 15),
-        #     text = f'file name: {file_name}').place(relx=0.2, rely=0.78, relwidth=0.78, relheight=0.2)
-        
 
-        var0 ,var1, var2, var3, var4, var5, var6 = tk.StringVar(), tk.StringVar(), tk.StringVar(), tk.StringVar(), tk.StringVar(), tk.StringVar(), tk.StringVar()
-        la0 = tk.Label(root, textvariable=var0, bg='#C6C6C6', fg='#000000', font=("Arial", 14)).place(relx=0.24, rely=0.79)
-        var0.set(f'file name: {file_name}')
-        la1 = tk.Label(root, textvariable=var1, bg='#C6C6C6', fg='#000000', font=("Arial", 18)).place(relx=0.22, rely=0.85)
+        var1, var2, var3, var4, var5, var6 = tk.StringVar(), tk.StringVar(), tk.StringVar(), tk.StringVar(), tk.StringVar(), tk.StringVar()
+        la1 = tk.Label(root, textvariable=var1, bg='#C6C6C6', fg='#000000', font=("Arial", 18))
         var1.set("speed    : ")
-        la2 = tk.Label(root, textvariable=var2, bg='#C6C6C6', fg='#000000', font=("Arial", 18)).place(relx=0.22, rely=0.9)
+        la1.place(relx=0.22, rely=0.81)
+        la2 = tk.Label(root, textvariable=var2, bg='#C6C6C6', fg='#000000', font=("Arial", 18))
         var2.set("spot size: ")
+        la2.place(relx=0.22, rely=0.87)
 
         if platform.system() == 'Darwin':
 
-            la3 = tk.Label(root, textvariable=var3, bg='#F0F0F0', fg='#850000', font=("Arial", 18), relief="ridge").place(relx=0.32, rely=0.85)
+            la3 = tk.Label(root, textvariable=var3, bg='#F0F0F0', fg='#850000', font=("Arial", 18), relief="ridge")
             var3.set(speed)
-
+            la3.place(relx=0.32, rely=0.81)
             '''
             Avoid too long values.
             '''
@@ -723,19 +586,23 @@ def B3f():
                 spot_size_Avg = round(spot_size_Avg, 0)
 
             # print spot size:
-            la4 = tk.Label(root, textvariable=var4, bg='#F0F0F0', fg='#BA1515', font=("Arial", 18), relief="ridge").place(relx=0.32, rely=0.9)
+            la4 = tk.Label(root, textvariable=var4, bg='#F0F0F0', fg='#BA1515', font=("Arial", 18), relief="ridge") 
             var4.set(f'{spot_size_Avg} ± {spot_size_StD}')
+            la4.place(relx=0.32, rely=0.87)
 
-            la5 = tk.Label(root, textvariable=var5, bg='#C6C6C6', fg='#000000', font=("Arial", 18)).place(relx=0.37, rely=0.85)
+            la5 = tk.Label(root, textvariable=var5, bg='#C6C6C6', fg='#000000', font=("Arial", 18))
             var5.set("um/s")
+            la5.place(relx=0.37, rely=0.81)
 
-            la6 = tk.Label(root, textvariable=var6, bg='#C6C6C6', fg='#000000', font=("Arial", 18)).place(relx=0.44, rely=0.9)
+            la6 = tk.Label(root, textvariable=var6, bg='#C6C6C6', fg='#000000', font=("Arial", 18))
             var6.set("um^2")
+            la6.place(relx=0.44, rely=0.87)
 
         elif platform.system() == 'Windows':
 
-            la3 = tk.Label(root, textvariable=var3, bg='#F0F0F0', fg='#850000', font=("Arial", 18), relief="ridge").place(relx=0.34, rely=0.85)
+            la3 = tk.Label(root, textvariable=var3, bg='#F0F0F0', fg='#850000', font=("Arial", 18), relief="ridge")
             var3.set(speed)
+            la3.place(relx=0.34, rely=0.81)
             '''
             Avoid too long values.
             '''
@@ -745,39 +612,30 @@ def B3f():
                 spot_size_Avg = round(spot_size_Avg, 0)
 
             # print spot size:
-            la4 = tk.Label(root, textvariable=var4, bg='#F0F0F0', fg='#BA1515', font=("Arial", 18), relief="ridge").place(relx=0.34, rely=0.9)
+            la4 = tk.Label(root, textvariable=var4, bg='#F0F0F0', fg='#BA1515', font=("Arial", 18), relief="ridge") 
             var4.set(f'{spot_size_Avg} ± {spot_size_StD}')
+            la4.place(relx=0.34, rely=0.87)
 
-            la5 = tk.Label(root, textvariable=var5, bg='#C6C6C6', fg='#000000', font=("Arial", 18)).place(relx=0.4, rely=0.85)
+            la5 = tk.Label(root, textvariable=var5, bg='#C6C6C6', fg='#000000', font=("Arial", 18))
             var5.set("um/s")
+            la5.place(relx=0.4, rely=0.81)
 
-            la6 = tk.Label(root, textvariable=var6, bg='#C6C6C6', fg='#000000', font=("Arial", 18)).place(relx=0.49, rely=0.9)
+            la6 = tk.Label(root, textvariable=var6, bg='#C6C6C6', fg='#000000', font=("Arial", 18))
             var6.set("um^2")
+            la6.place(relx=0.49, rely=0.87)
 
     # elif k_parameters == None:
-        # r.place(relx=0.2, rely=0.78, relwidth=0.78, relheight=0.2)
-
-# def B4f():
-#     # cls
-
-#     ax.clear()
-#     ax.axis('off')
-#     line.draw() 
-
-#     tk.Label(root, text = '').place(relx=0.02, rely=0.85, relwidth=0.16, relheight=0.05)
-#     tk.Label(root, bg='#C6C6C6').place(relx=0.2, rely=0.78, relwidth=0.78, relheight=0.2) 
+        r.place(relx=0.2, rely=0.78, relwidth=0.78, relheight=0.2)
 
 def B4f():
-    list_of_file, folder_path = r_all_file()
-    if len(list_of_file) == 0:
-        top = tk.Toplevel(root)
-        top.geometry("500x250")
-        top.title("File Name Error!")
-        word = f'File Name Error!\nfile name should be: s100_z10_...'
-        tk.Label(top, fg='#FF0000', text= word , font=('Mistral 18 bold')).place(x=250,y=125, anchor="center")
-    else:
-        plt_all()
+    # cls
 
+    ax.clear()
+    ax.axis('off')
+    line.draw() 
+
+    tk.Label(root, text = '').place(relx=0.02, rely=0.85, relwidth=0.16, relheight=0.05)
+    tk.Label(root, bg='#C6C6C6').place(relx=0.2, rely=0.78, relwidth=0.78, relheight=0.2) 
 
 def B5f():
     # cls first
@@ -840,7 +698,6 @@ def open_popup2(file_name):
    word = f'{file_name}\nAnalyze Error!'
    tk.Label(top, fg='#FF0000', text= word , font=('Mistral 18 bold')).place(x=250,y=125, anchor="center")
 
-
 #--- Raiz ---
 root = tk.Tk()
 root.geometry('900x600')
@@ -897,7 +754,7 @@ B2.place(rely= 2*(0.1 + RH*0.44) ,relheight=RH, relwidth=1)
 B3 = tk.Button(left_frame,text="Fit Error func",command = B3f)
 B3.place(rely= 3*(0.1 + RH*0.44) ,relheight=RH, relwidth=1)
 
-B4 = tk.Button(left_frame, text="Plt all",command = B4f)
+B4 = tk.Button(left_frame, text="Clear",command = B4f)
 B4.place(rely= 4*(0.1 + RH*0.44) ,relheight=RH, relwidth=1)
 
 B5 = tk.Button(left_frame, text="Dependence\nof A on z",command = B5f)
@@ -911,5 +768,5 @@ ax.grid(True),ax.set_xlabel('$x$'),ax.set_ylabel('$y(x)$')
 line = FigureCanvasTkAgg(figure, right_frame)
 line.get_tk_widget().pack(side=tk.LEFT, fill=tk.BOTH,expand=1)
 #----------------------
-B0f()
+# B0f()
 root.mainloop()
