@@ -486,13 +486,13 @@ def main():
 
     return spot_dependence_on_z, proplem_list
 
-def plt_all():
+def plt_all(list_of_file, folder_path):
     
     # plt start:
     fig_N = len(list_of_file)
     row = math.ceil(fig_N/7) if math.ceil(fig_N/7) != 0 else 1
     fig, axes = plt.subplots(row, 7, figsize=(18, 2*row), dpi=100)
-    fig.subplots_adjust(wspace = .3)  # hspace = .45, 
+    fig.subplots_adjust(hspace = .15, wspace = .3)  # 
     axes = axes.ravel()
     c = ['#B22222', '#CD9B1D', '#FF7D40', '#FFC125', '#FF3030', '#FFC125', 
         '#B22222', '#CD9B1D', '#FF7D40', '#FFC125', '#FF3030', '#FFC125']
@@ -776,7 +776,7 @@ def B4f():
         word = f'File Name Error!\nfile name should be: s100_z10_...'
         tk.Label(top, fg='#FF0000', text= word , font=('Mistral 18 bold')).place(x=250,y=125, anchor="center")
     else:
-        plt_all()
+        plt_all(list_of_file, folder_path)
 
 
 def B5f():
