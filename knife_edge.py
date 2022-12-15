@@ -122,7 +122,7 @@ def skip_noise():
     # First step:
     
     counts, dis = np.histogram(ydat, bins= 10)    
-#     plt.stairs(counts, dis) # 可刪
+    # plt.stairs(counts, dis) # 可刪
     _y = counts.tolist()
     max_index = _y.index(max(counts)) 
     delta = float(format(dis[1] - dis[0], '.7f'))
@@ -216,6 +216,7 @@ def Find_thepeak(x_new, y_new, N):
     ave_x, y_grad, y_grad_= gradient(x_new, y_new, N)
     
     counts, dis = np.histogram(y_grad, bins= 5)
+    # plt.stairs(counts, dis) # 可刪
     delta = abs(dis[0] - dis[2])
 
     peaks, _ = find_peaks(y_grad_, height=delta)
