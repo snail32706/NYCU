@@ -131,9 +131,9 @@ def myerf(x, a, k, x0, y0):
     
     return a * erf(k * (x - x0)) + y0
 
-    def plt_xy(x, y, A, axis=None):
-            fig = plt.figure(figsize=(6, 4), dpi=100)
-            ax1 = fig.add_subplot(111)
+def plt_xy(x, y, A, axis=None):
+    fig = plt.figure(figsize=(6, 4), dpi=100)
+    ax1 = fig.add_subplot(111)
 
     if axis is not None:
         ax1.set_xlabel("time (s)")
@@ -487,45 +487,45 @@ def main():
 
     return spot_dependence_on_z, proplem_list
 
-    def plt_all(list_of_file, folder_path):
-        
-        # plt start:
-        fig_N = len(list_of_file)
-        row = math.ceil(fig_N/7) if math.ceil(fig_N/7) != 0 else 1
-        fig, axes = plt.subplots(row, 7, figsize=(18, 2*row), dpi=100)
-        fig.subplots_adjust(hspace = .15, wspace = .6)  # 
-        axes = axes.ravel()
-        c = ['#B22222', '#CD9B1D', '#FF7D40', '#FFC125', '#FF3030', '#FFC125', 
-            '#B22222', '#CD9B1D', '#FF7D40', '#FFC125', '#FF3030', '#FFC125']
+def plt_all(list_of_file, folder_path):
+    
+    # plt start:
+    fig_N = len(list_of_file)
+    row = math.ceil(fig_N/7) if math.ceil(fig_N/7) != 0 else 1
+    fig, axes = plt.subplots(row, 7, figsize=(18, 2*row), dpi=100)
+    fig.subplots_adjust(hspace = .15, wspace = .6)  # 
+    axes = axes.ravel()
+    c = ['#B22222', '#CD9B1D', '#FF7D40', '#FFC125', '#FF3030', '#FFC125', 
+        '#B22222', '#CD9B1D', '#FF7D40', '#FFC125', '#FF3030', '#FFC125']
 
-        for K, file_name in enumerate(list_of_file):
-            absolute_file_path = f'{folder_path}/{file_name}' # 絕對路徑
+    for K, file_name in enumerate(list_of_file):
+        absolute_file_path = f'{folder_path}/{file_name}' # 絕對路徑
 
-            Name_i, Name_f = file_name[ :int(len(file_name)/2)], file_name[int(len(file_name)/2): ]
-            axes[K].set_title(f'{Name_i}\n{Name_f}', fontsize=8)
-            try: 
-                file_name, speed, z_int, xdat_row, ydat_row, x_dat, y_dat, avg_x_byN, del_y_byN, mid_ofx, xpeaks, D_1, D_2 = FAS(absolute_file_path, plt_all='y')
-                k_parameters   = append_all_k(D_1, D_2, mid_ofx, find_midy(x_dat, y_dat))
-                axes[K].axis('off')
-                # axes[K].set_title(f'{file_name}', fontsize=8)
-                axes[K].plot(xdat_row, ydat_row, 'k.',markersize = 0.5)
-                axes[K].plot(x_dat, y_dat, 'k.',markersize = 2)
-                if len(mid_ofx) == 1:
-                        p = fit_error(x_dat, y_dat, mid_ofx[0], find_midy(x_dat, y_dat))
-                        a, k, x0, y0 = p[0], p[1], p[2], p[3]
-                        axes[K].plot(x_dat, myerf(x_dat, a, k, x0, y0), color=c[0], linewidth=8, alpha=0.5)
-                        # plt.show()
-                else:
-                    for i, val in enumerate(mid_ofx):
-                        p = fit_error(D_1[i], D_2[i], val, find_midy(x_dat, y_dat))
-                        a, k, x0, y0 = p[0], p[1], p[2], p[3]
-                        axes[K].plot(D_1[i], myerf(D_1[i], a, k, x0, y0), color=c[i] , linewidth=8, alpha=0.5)
-            except:
-                file_name, xdat_row, ydat_row,= FAS(absolute_file_path, get_row_data='yes', plt_all='y')
-                axes[K].plot(xdat_row, ydat_row, 'b.',markersize = 2)
-                axes[K].axis('off')
+        Name_i, Name_f = file_name[ :int(len(file_name)/2)], file_name[int(len(file_name)/2): ]
+        axes[K].set_title(f'{Name_i}\n{Name_f}', fontsize=8)
+        try: 
+            file_name, speed, z_int, xdat_row, ydat_row, x_dat, y_dat, avg_x_byN, del_y_byN, mid_ofx, xpeaks, D_1, D_2 = FAS(absolute_file_path, plt_all='y')
+            k_parameters   = append_all_k(D_1, D_2, mid_ofx, find_midy(x_dat, y_dat))
+            axes[K].axis('off')
+            # axes[K].set_title(f'{file_name}', fontsize=8)
+            axes[K].plot(xdat_row, ydat_row, 'k.',markersize = 0.5)
+            axes[K].plot(x_dat, y_dat, 'k.',markersize = 2)
+            if len(mid_ofx) == 1:
+                    p = fit_error(x_dat, y_dat, mid_ofx[0], find_midy(x_dat, y_dat))
+                    a, k, x0, y0 = p[0], p[1], p[2], p[3]
+                    axes[K].plot(x_dat, myerf(x_dat, a, k, x0, y0), color=c[0], linewidth=8, alpha=0.5)
+                    # plt.show()
+            else:
+                for i, val in enumerate(mid_ofx):
+                    p = fit_error(D_1[i], D_2[i], val, find_midy(x_dat, y_dat))
+                    a, k, x0, y0 = p[0], p[1], p[2], p[3]
+                    axes[K].plot(D_1[i], myerf(D_1[i], a, k, x0, y0), color=c[i] , linewidth=8, alpha=0.5)
+        except:
+            file_name, xdat_row, ydat_row,= FAS(absolute_file_path, get_row_data='yes', plt_all='y')
+            axes[K].plot(xdat_row, ydat_row, 'b.',markersize = 2)
+            axes[K].axis('off')
 
-        plt.show()
+    plt.show()
 
 
 def FAS(file, get_row_data=None, plt_all=None):
@@ -673,8 +673,7 @@ def B3f():
         spot_size_list = calculate_spot_size(k_parameters, speed)
 
         ax.clear()
-        # ax.plot(x_dat, y_dat, 'b.',markersize = 5)
-        ax.scatter(xdat, ydat, s=100, facecolors='none', edgecolors='k')
+        ax.plot(x_dat, y_dat, 'b.',markersize = 5)
         ax.set_xlabel("time (s)")
         ax.set_ylabel("signal (a.u.)")
         ax.set_title("fit: a * erf(k * (x - x0)) + y0")
