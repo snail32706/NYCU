@@ -492,7 +492,7 @@ def plt_all(list_of_file, folder_path):
     fig_N = len(list_of_file)
     row = math.ceil(fig_N/7) if math.ceil(fig_N/7) != 0 else 1
     fig, axes = plt.subplots(row, 7, figsize=(18, 2*row), dpi=100)
-    fig.subplots_adjust(hspace = .15, wspace = .3)  # 
+    fig.subplots_adjust(hspace = .15, wspace = .6)  # 
     axes = axes.ravel()
     c = ['#B22222', '#CD9B1D', '#FF7D40', '#FFC125', '#FF3030', '#FFC125', 
         '#B22222', '#CD9B1D', '#FF7D40', '#FFC125', '#FF3030', '#FFC125']
@@ -564,7 +564,7 @@ def FAS(file, get_row_data=None, plt_all=None):
 # ------ ------------ ------ # 
 # ------ tkinter func ------ # 
 
-x_new_G, y_new_G = None, None
+# x_new_G, y_new_G = None, None
 absolute_file_path = None # 唯一 global variable
 
 def B0f():
@@ -576,7 +576,7 @@ def B0f():
     try:
         absolute_file_path = open_file()
         file_name, xdat_row, ydat_row,= FAS(absolute_file_path, get_row_data='yes')
-        x_new_G, y_new_G = None, None
+        # x_new_G, y_new_G = None, None
         ax.clear()
         ax.set_xlabel("time (s)")
         ax.set_ylabel("signal (a.u.)")
@@ -593,8 +593,12 @@ def B0f():
     r.place(relx=0.2, rely=0.78, relwidth=0.78, relheight=0.2) 
 
     if absolute_file_path is not None:
-        l = tk.Label(root, fg='#FFDC00', font=("Arial", 15),
-            text = f'Load Success!').place(relx=0.02, rely=0.85, relwidth=0.16, relheight=0.05)
+        if platform.system() == 'Windows':
+            l = tk.Label(root, fg='#27AE60', font=("Arial", 15),
+                text = f'Load Success!').place(relx=0.02, rely=0.85, relwidth=0.16, relheight=0.05)
+        else:
+            l = tk.Label(root, fg='#FFDC00', font=("Arial", 15),
+                text = f'Load Success!').place(relx=0.02, rely=0.85, relwidth=0.16, relheight=0.05)
         r = tk.Label(root, bg='#C6C6C6', fg='#000000', font=("Arial", 15),
             text = f'file name:\n{file_name}').place(relx=0.2, rely=0.78, relwidth=0.78, relheight=0.2) 
     else:
@@ -616,12 +620,14 @@ def B1f():
         ax.set_ylabel("signal (a.u.)")
         ax.plot(x_dat, y_dat, 'b.',markersize = 4), ax.grid(True)
         line.draw()   
-
     except:
-        file_name, xdat_row, ydat_row,= FAS(absolute_file_path, get_row_data='yes')
-        tk.Label(root, text = 'load another file').place(relx=0.02, rely=0.85, relwidth=0.16, relheight=0.05)
-        tk.Label(root, bg='#C6C6C6').place(relx=0.2, rely=0.78, relwidth=0.78, relheight=0.2) 
-        open_popup2(file_name)  
+        file_name = absolute_to_relative(absolute_file_path)
+        if judgment_format(file_name) is None:
+            open_popup3(file_name)
+        else:
+            tk.Label(root, text = 'load another file').place(relx=0.02, rely=0.85, relwidth=0.16, relheight=0.05)
+            tk.Label(root, bg='#C6C6C6').place(relx=0.2, rely=0.78, relwidth=0.78, relheight=0.2) 
+            open_popup2(file_name)  
 
 def B2f():
     '''
@@ -642,10 +648,13 @@ def B2f():
             ax.scatter(avg_x_byN[i], abs(del_y_byN)[i], s=8**2, c='r', alpha=0.5)
         line.draw()    
     except:
-        file_name, xdat_row, ydat_row,= FAS(absolute_file_path, get_row_data='yes')
-        tk.Label(root, text = 'load another file').place(relx=0.02, rely=0.85, relwidth=0.16, relheight=0.05)
-        tk.Label(root, bg='#C6C6C6').place(relx=0.2, rely=0.78, relwidth=0.78, relheight=0.2) 
-        open_popup2(file_name)  
+        file_name = absolute_to_relative(absolute_file_path)
+        if judgment_format(file_name) is None:
+            open_popup3(file_name)
+        else:
+            tk.Label(root, text = 'load another file').place(relx=0.02, rely=0.85, relwidth=0.16, relheight=0.05)
+            tk.Label(root, bg='#C6C6C6').place(relx=0.2, rely=0.78, relwidth=0.78, relheight=0.2) 
+            open_popup2(file_name)  
 
 def B3f():
     
@@ -681,10 +690,13 @@ def B3f():
                 ax.plot(D_1[i], myerf(D_1[i], a, k, x0, y0), color=c[i] , linewidth=8, alpha=0.5)
         line.draw()  
     except:
-        file_name, xdat_row, ydat_row,= FAS(absolute_file_path, get_row_data='yes')
-        tk.Label(root, text = 'load another file').place(relx=0.02, rely=0.85, relwidth=0.16, relheight=0.05)
-        tk.Label(root, bg='#C6C6C6').place(relx=0.2, rely=0.78, relwidth=0.78, relheight=0.2) 
-        open_popup2(file_name)  
+        file_name = absolute_to_relative(absolute_file_path)
+        if judgment_format(file_name) is None:
+            open_popup3(file_name)
+        else:
+            tk.Label(root, text = 'load another file').place(relx=0.02, rely=0.85, relwidth=0.16, relheight=0.05)
+            tk.Label(root, bg='#C6C6C6').place(relx=0.2, rely=0.78, relwidth=0.78, relheight=0.2) 
+            open_popup2(file_name)    
 
     if k_parameters is not None:
 
@@ -840,6 +852,12 @@ def open_popup2(file_name):
    word = f'{file_name}\nAnalyze Error!'
    tk.Label(top, fg='#FF0000', text= word , font=('Mistral 18 bold')).place(x=250,y=125, anchor="center")
 
+def open_popup3(file_name):
+   top = tk.Toplevel(root)
+   top.geometry("500x250")
+   top.title("Name Error!")
+   word = f'{file_name}\nName Error!'
+   tk.Label(top, fg='#FF0000', text= word , font=('Mistral 18 bold')).place(x=250,y=125, anchor="center")
 
 #--- Raiz ---
 root = tk.Tk()
