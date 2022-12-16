@@ -120,6 +120,10 @@ def read_file(file_name):
 # ------ -------- ------ #
 # ------ def func ------ #
 
+def gauss(x, μ, σ, A, y0):            
+    
+    return y0 + A * np.exp(-(x-μ)**2/2/σ**2) 
+
 def myerf(x, a, k, x0, y0):
     
     '''
@@ -163,6 +167,59 @@ def fit_error(xdat, ydat, mid_x, mid_y):
     # display(a) 
     return popt
 
+def fit_gauss(xdat, ydat, normalized=None):
+    
+    def Gauss_fix_high(x, μ, σ):
+        nonlocal params_first, pick_y
+        A  = pick_y - params_first[3]
+        y0 = params_first[3]
+        return y0 + A * np.exp(-(x-μ)**2/2/σ**2) 
+    
+    peaks, _ = find_peaks(ydat, max(ydat))
+    pick_x, pick_y = float(xdat[peaks]), float(ydat[peaks])
+
+    def first_fit(xdat, ydat, pick_x, pick_y, sigma):
+        expected = (sigma, pick_x, pick_y, 0)                   # put parameter test into function (μ, σ, A, y0)
+        params, cov = curve_fit(gauss, xdat, ydat, expected)  
+        # σ = np.sqrt(np.diag(cov))        
+        # a = pd.DataFrame(data={'params':params,'σ':σ}, index = gauss.__code__.co_varnames[1:])     
+        # display(a)
+        return params
+        
+    # use while loop to find best parameter   
+    CC, sigma = 0, (max(xdat) - min(xdat))/1e4 
+    while True:
+        if CC > 10:
+            print('while loop for fit gauss func: 15 times')
+            break
+        CC += 1    
+        params_first = first_fit(xdat, ydat, pick_x, pick_y, sigma)
+        ratio_x0 = params_first[0]/pick_x if params_first[0]/pick_x > 1 else pick_x/params_first[0]
+        Del_A = abs(pick_y - params_first[3])
+        ratio_A = abs(params_first[2]/Del_A) if abs(params_first[2]/Del_A) > 1 else abs(Del_A/params_first[2])
+        if ratio_x0 < 1.1 and ratio_A < 1.3:
+            break        
+        sigma = sigma * 5
+    
+    # second fit
+    def second_fit(xdat, ydat):
+        nonlocal params_first
+        expected = (params_first[0], params_first[1])           # put parameter test into function (μ, σ)
+        params, cov = curve_fit(Gauss_fix_high, xdat, ydat, expected)  
+        σ = np.sqrt(np.diag(cov))        
+        a = pd.DataFrame(data={'params':params,'σ':σ}, index = Gauss_fix_high.__code__.co_varnames[1:3])      
+        # display(a)
+        return params
+    params_second = second_fit(xdat, ydat)
+
+    if normalized is None:
+        return params_first
+    else:
+        A_and_y = np.array([pick_y - params_first[3],  params_first[3]])
+        second_array = np.concatenate(( params_second, A_and_y)) 
+        second_array = second_array*[1, -1, 1, 1] if second_array[1] < 0 else second_array
+        return second_array
+
 def calculate_spot_size(k_parameters, speed):
     '''
     put all k
@@ -193,57 +250,6 @@ def find_midy(xdat, ydat):
     max2 = counts.tolist().index(sorted(counts, reverse = True)[1])
     mid_y = (dis[max1] + dis[max2]) / 2
     return mid_y
-
-# def skip_noise(xdat, ydat):
-
-#     # First step:
-#     counts, dis = np.histogram(ydat, bins= 15)
-#      # plt.stairs(counts, dis) # 可刪
-#     region = []
-#     for i, val in enumerate(counts):
-#         if val > 50:
-#             region.append(dis[i])
-#             region.append(dis[i+1])
-#     N = int(len(region)/2)
-#     s_x, s_y = [], []
-#     for i in range(N):
-#         s_x.append([])
-#         s_y.append([]) # f'region{i+1}:'
-    
-#     for i, val in enumerate(ydat):
-#         for j in range(N):
-#             if j == 0:
-#                 if val < region[2*j+1]:
-#                     s_x[j].append(xdat[i])
-#                     s_y[j].append(ydat[i]) 
-#             elif j == N-1:
-#                 if val > region[2*j]:
-#                     s_x[j].append(xdat[i])
-#                     s_y[j].append(ydat[i]) 
-#             else:
-#                 if val > region[2*j] and val < region[2*j+1]:
-#                     s_x[j].append(xdat[i])
-#                     s_y[j].append(ydat[i]) 
-#     noise = []
-#     for j in range(N):
-#         delta = 0
-#         for i, val in enumerate(s_x[j]):
-#             if i == 0:
-#                 delta = abs(s_x[j][i] - xdat[0]) if abs(s_x[j][i] - min(xdat)) > abs(s_x[j][len(s_x[j])-1] - xdat[len(xdat)-1]) else abs(s_x[j][len(s_x[j])-1] - xdat[len(xdat)-1])
-#             else:    
-#                 delta = abs(s_x[j][i] - s_x[j][i-1]) if abs(s_x[j][i] - s_x[j][i-1]) > delta else delta
-#         if delta < (max(xdat) - min(xdat)) / 100:
-#             if len(noise) == 0:
-#                 noise = s_x[j]
-#             else:
-#                 noise += s_x[j]
-                
-#     x_new, y_new = [], []       
-#     for i, val in enumerate(xdat):  
-#         if val not in noise:
-#             x_new.append(val)
-#             y_new.append(ydat[i])
-#     return x_new, y_new
 
 def skip_noise(xdat, ydat):
     
@@ -575,6 +581,7 @@ def B0f():
 
     try:
         absolute_file_path = open_file()
+        x_new_G, y_new_G = None, None
         file_name, xdat_row, ydat_row,= FAS(absolute_file_path, get_row_data='yes')
         # x_new_G, y_new_G = None, None
         ax.clear()
@@ -607,51 +614,53 @@ def B1f():
     show processing data
     '''  
     if absolute_file_path is None:
-        tk.Label(root, text = 'load another file').place(relx=0.02, rely=0.891, relwidth=0.16, relheight=0.05)
+        tk.Label(root, font=("Arial", 15), text = 'load another file').place(relx=0.02, rely=0.891, relwidth=0.16, relheight=0.05)
         tk.Label(root, bg='#C6C6C6').place(relx=0.2, rely=0.78, relwidth=0.78, relheight=0.2) 
         open_popup1()
-    try:
-        file_name, speed, z_int, xdat_row, ydat_row, x_dat, y_dat, avg_x_byN, del_y_byN, mid_ofx, xpeaks, D_1, D_2 = FAS(absolute_file_path)
-        ax.clear()
-        ax.set_xlabel("time (s)")
-        ax.set_ylabel("signal (a.u.)")
-        ax.plot(x_dat, y_dat, 'b.',markersize = 4), ax.grid(True)
-        line.draw()   
-    except:
-        file_name = absolute_to_relative(absolute_file_path)
-        if judgment_format(file_name) is None:
-            open_popup3(file_name)
-        else:
-            tk.Label(root, text = 'load another file').place(relx=0.02, rely=0.891, relwidth=0.16, relheight=0.05)
-            tk.Label(root, bg='#C6C6C6').place(relx=0.2, rely=0.78, relwidth=0.78, relheight=0.2) 
-            open_popup2(file_name)  
+    else:
+        try:    
+            file_name, speed, z_int, xdat_row, ydat_row, x_dat, y_dat, avg_x_byN, del_y_byN, mid_ofx, xpeaks, D_1, D_2 = FAS(absolute_file_path)
+            ax.clear()
+            ax.set_xlabel("time (s)")
+            ax.set_ylabel("signal (a.u.)")
+            ax.plot(x_dat, y_dat, 'b.',markersize = 4), ax.grid(True)
+            line.draw()   
+        except:
+            file_name = absolute_to_relative(absolute_file_path)
+            if judgment_format(file_name) is None:
+                open_popup3(file_name)
+            else:
+                tk.Label(root, font=("Arial", 15), text = 'load another file').place(relx=0.02, rely=0.891, relwidth=0.16, relheight=0.05)
+                tk.Label(root, bg='#C6C6C6').place(relx=0.2, rely=0.78, relwidth=0.78, relheight=0.2) 
+                open_popup2(file_name)  
 
 def B2f():
     '''
     show gradient and peaks.
     '''
     if absolute_file_path is None:
-        tk.Label(root, text = 'load another file').place(relx=0.02, rely=0.891, relwidth=0.16, relheight=0.05)
+        tk.Label(root, font=("Arial", 15), text = 'load another file').place(relx=0.02, rely=0.891, relwidth=0.16, relheight=0.05)
         tk.Label(root, bg='#C6C6C6').place(relx=0.2, rely=0.78, relwidth=0.78, relheight=0.2) 
         open_popup1()
-    try:
-        file_name, speed, z_int, xdat_row, ydat_row, x_dat, y_dat, avg_x_byN, del_y_byN, mid_ofx, xpeaks, D_1, D_2 = FAS(absolute_file_path)
-        ax.clear()
-        ax.set_xlabel("time (s)")
-        ax.set_ylabel("signal (a.u.)")
-        ax.plot(avg_x_byN, abs(del_y_byN), 'b.-',markersize = 4), ax.grid(True)
-        # ax.scatter(x, y, s=area, c=colors, alpha=0.5)
-        for i in xpeaks:
-            ax.scatter(avg_x_byN[i], abs(del_y_byN)[i], s=8**2, c='r', alpha=0.5)
-        line.draw()    
-    except:
-        file_name = absolute_to_relative(absolute_file_path)
-        if judgment_format(file_name) is None:
-            open_popup3(file_name)
-        else:
-            tk.Label(root, text = 'load another file').place(relx=0.02, rely=0.891, relwidth=0.16, relheight=0.05)
-            tk.Label(root, bg='#C6C6C6').place(relx=0.2, rely=0.78, relwidth=0.78, relheight=0.2) 
-            open_popup2(file_name)  
+    else:
+        try:
+            file_name, speed, z_int, xdat_row, ydat_row, x_dat, y_dat, avg_x_byN, del_y_byN, mid_ofx, xpeaks, D_1, D_2 = FAS(absolute_file_path)
+            ax.clear()
+            ax.set_xlabel("time (s)")
+            ax.set_ylabel("signal (a.u.)")
+            ax.plot(avg_x_byN, abs(del_y_byN), 'b.-',markersize = 4), ax.grid(True)
+            # ax.scatter(x, y, s=area, c=colors, alpha=0.5)
+            for i in xpeaks:
+                ax.scatter(avg_x_byN[i], abs(del_y_byN)[i], s=8**2, c='r', alpha=0.5)
+            line.draw()    
+        except:
+            file_name = absolute_to_relative(absolute_file_path)
+            if judgment_format(file_name) is None:
+                open_popup3(file_name)
+            else:
+                tk.Label(root, font=("Arial", 15), text = 'load another file').place(relx=0.02, rely=0.891, relwidth=0.16, relheight=0.05)
+                tk.Label(root, bg='#C6C6C6').place(relx=0.2, rely=0.78, relwidth=0.78, relheight=0.2) 
+                open_popup2(file_name)  
 
 def B3f():
     
@@ -660,40 +669,42 @@ def B3f():
     '''
     tk.Label(root, bg='#C6C6C6').place(relx=0.2, rely=0.78, relwidth=0.78, relheight=0.2)  # cls 
     if absolute_file_path is None:
-        tk.Label(root, text = 'load another file').place(relx=0.02, rely=0.85, relwidth=0.16, relheight=0.05)
+        # left_down 
+        tk.Label(root, font=("Arial", 15), text = 'load another file').place(relx=0.02, rely=0.891, relwidth=0.16, relheight=0.05)
         tk.Label(root, bg='#C6C6C6').place(relx=0.2, rely=0.78, relwidth=0.78, relheight=0.2) 
         open_popup1()
-    try:
-        file_name, speed, z_int, xdat_row, ydat_row, x_dat, y_dat, avg_x_byN, del_y_byN, mid_ofx, xpeaks, D_1, D_2 = FAS(absolute_file_path)
-        k_parameters   = append_all_k(D_1, D_2, mid_ofx, find_midy(x_dat, y_dat))
-        spot_size_list = calculate_spot_size(k_parameters, speed)
+    else:
+        try:    
+            file_name, speed, z_int, xdat_row, ydat_row, x_dat, y_dat, avg_x_byN, del_y_byN, mid_ofx, xpeaks, D_1, D_2 = FAS(absolute_file_path)
+            k_parameters   = append_all_k(D_1, D_2, mid_ofx, find_midy(x_dat, y_dat))
+            spot_size_list = calculate_spot_size(k_parameters, speed)
 
-        ax.clear()
-        ax.plot(x_dat, y_dat, 'b.',markersize = 5)
-        ax.set_xlabel("time (s)")
-        ax.set_ylabel("signal (a.u.)")
-        ax.set_title("fit: a * erf(k * (x - x0)) + y0")
-        c = ['#B22222', '#CD9B1D', '#FF7D40', '#FFC125', '#FF3030', '#FFC125', 
-            '#B22222', '#CD9B1D', '#FF7D40', '#FFC125', '#FF3030', '#FFC125'] # color code for fit diff curve
-        if len(mid_ofx) == 1:
-                p = fit_error(x_dat, y_dat, mid_ofx[0], find_midy(x_dat, y_dat))
-                a, k, x0, y0 = p[0], p[1], p[2], p[3]
-                # ax.plot(x_dat, myerf(x_dat, a, k, x0, y0), color=c[0], linewidth=8, alpha=0.5)
-                ax.plot(x_dat, myerf(x_dat, a, k, x0, y0), color='r', linewidth=10, alpha=0.5)
-        else:    
-            for i, val in enumerate(mid_ofx):
-                p = fit_error(D_1[i], D_2[i], val, find_midy(x_dat, y_dat))
-                a, k, x0, y0 = p[0], p[1], p[2], p[3]
-                ax.plot(D_1[i], myerf(D_1[i], a, k, x0, y0), color=c[i] , linewidth=8, alpha=0.5)
-        line.draw()  
-    except:
-        file_name = absolute_to_relative(absolute_file_path)
-        if judgment_format(file_name) is None:
-            open_popup3(file_name)
-        else:
-            tk.Label(root, text = 'load another file').place(relx=0.02, rely=0.85, relwidth=0.16, relheight=0.05)
-            tk.Label(root, bg='#C6C6C6').place(relx=0.2, rely=0.78, relwidth=0.78, relheight=0.2) 
-            open_popup2(file_name)    
+            ax.clear()
+            ax.plot(x_dat, y_dat, 'b.',markersize = 5)
+            ax.set_xlabel("time (s)")
+            ax.set_ylabel("signal (a.u.)")
+            ax.set_title("fit: a * erf(k * (x - x0)) + y0")
+            c = ['#B22222', '#CD9B1D', '#FF7D40', '#FFC125', '#FF3030', '#FFC125', 
+                '#B22222', '#CD9B1D', '#FF7D40', '#FFC125', '#FF3030', '#FFC125'] # color code for fit diff curve
+            if len(mid_ofx) == 1:
+                    p = fit_error(x_dat, y_dat, mid_ofx[0], find_midy(x_dat, y_dat))
+                    a, k, x0, y0 = p[0], p[1], p[2], p[3]
+                    # ax.plot(x_dat, myerf(x_dat, a, k, x0, y0), color=c[0], linewidth=8, alpha=0.5)
+                    ax.plot(x_dat, myerf(x_dat, a, k, x0, y0), color='r', linewidth=10, alpha=0.5)
+            else:    
+                for i, val in enumerate(mid_ofx):
+                    p = fit_error(D_1[i], D_2[i], val, find_midy(x_dat, y_dat))
+                    a, k, x0, y0 = p[0], p[1], p[2], p[3]
+                    ax.plot(D_1[i], myerf(D_1[i], a, k, x0, y0), color=c[i] , linewidth=8, alpha=0.5)
+            line.draw()  
+        except:
+            file_name = absolute_to_relative(absolute_file_path)
+            if judgment_format(file_name) is None:
+                open_popup3(file_name)
+            else:
+                tk.Label(root, font=("Arial", 15), text = 'load another file').place(relx=0.02, rely=0.85, relwidth=0.16, relheight=0.05)
+                tk.Label(root, bg='#C6C6C6').place(relx=0.2, rely=0.78, relwidth=0.78, relheight=0.2) 
+                open_popup2(file_name)    
 
     if k_parameters is not None:
 
@@ -766,7 +777,30 @@ def B3f():
     # elif k_parameters == None:
         # r.place(relx=0.2, rely=0.78, relwidth=0.78, relheight=0.2)
 
-def B4f():
+def B4f(): # Gauss
+        
+    if absolute_file_path is None:
+        tk.Label(root, font=("Arial", 15), text = 'Load File!!!').place(relx=0.02, rely=0.891, relwidth=0.16, relheight=0.05)
+        tk.Label(root, bg='#C6C6C6').place(relx=0.2, rely=0.78, relwidth=0.78, relheight=0.2) 
+        open_popup1()
+    else:
+        # try:
+        file_name, xdat_gauss, ydat_gauss = FAS(absolute_file_path, get_row_data='yes')
+        gauss_parameter = fit_gauss(xdat_gauss, ydat_gauss, normalized='y')
+
+        ax.clear()
+        ax.set_xlabel("x (um)")
+        ax.set_ylabel("signal (a.u.)")
+        ax.plot(xdat_gauss, ydat_gauss, 'b.',markersize = 4), ax.grid(True)
+        ax.plot(xdat_gauss, gauss(xdat_gauss, *gauss_parameter), color='red', lw=1.8)
+        ax.set_xlim(gauss_parameter[0] - 15*abs(gauss_parameter[1]), gauss_parameter[0] + 15*abs(gauss_parameter[1]))
+        line.draw()  
+        FWHM = abs(gauss_parameter[1])*2 * np.sqrt(np.log(4))
+        r = tk.Label(root, bg='#C6C6C6').place(relx=0.2, rely=0.78, relwidth=0.78, relheight=0.2)  # cls
+        r = tk.Label(root, bg='#C6C6C6', fg='#000000', font=("Arial", 18), text = f'FWHM = {np.around(FWHM,2)} μm', relief="ridge").place(relx=0.2, rely=0.78, relwidth=0.78, relheight=0.2)
+
+def B5f(): # plt all folder .txt
+
     list_of_file, folder_path = r_all_file()
     if len(list_of_file) == 0:
         top = tk.Toplevel(root)
@@ -777,11 +811,8 @@ def B4f():
     else:
         plt_all(list_of_file, folder_path)
 
-def B5f():
-    pass
 
-
-def B6f():
+def B6f(): # Dependence of spot size on focul length
     # cls first
     tk.Label(root, text = '').place(relx=0.02, rely=0.891, relwidth=0.16, relheight=0.05)
     tk.Label(root, bg='#C6C6C6').place(relx=0.2, rely=0.78, relwidth=0.78, relheight=0.2) 
