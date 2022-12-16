@@ -563,7 +563,6 @@ def FAS(file, get_row_data=None, plt_all=None):
 
 
 # ------ ------------ ------ # 
-# ------ tkinter func ------ # 
 
 x_new_G, y_new_G = None, None
 absolute_file_path = None # 唯一 global variable
@@ -595,23 +594,20 @@ def B0f():
 
     if absolute_file_path is not None:
         if platform.system() == 'Windows':
-            l = tk.Label(root, fg='#27AE60', font=("Arial", 15),
-                text = f'Load Success!').place(relx=0.02, rely=0.85, relwidth=0.16, relheight=0.05)
+            left_down = tk.Label(root, fg='#27AE60', font=("Arial", 15), text = f'Load Success!').place(relx=0.02, rely=0.891, relwidth=0.16, relheight=0.05)
         else:
-            l = tk.Label(root, fg='#FFDC00', font=("Arial", 15),
-                text = f'Load Success!').place(relx=0.02, rely=0.85, relwidth=0.16, relheight=0.05)
-        r = tk.Label(root, bg='#C6C6C6', fg='#000000', font=("Arial", 15),
-            text = f'file name:\n{file_name}').place(relx=0.2, rely=0.78, relwidth=0.78, relheight=0.2) 
+            left_down =  tk.Label(root, fg='#FFDC00', font=("Arial", 15), text = f'Load Success!').place(relx=0.02, rely=0.891, relwidth=0.16, relheight=0.05)
+        r = tk.Label(root, bg='#C6C6C6', fg='#000000', font=("Arial", 15), text = f'file name:\n{file_name}').place(relx=0.2, rely=0.78, relwidth=0.78, relheight=0.2) 
     else:
-        tk.Label(root, text = '').place(relx=0.02, rely=0.85, relwidth=0.16, relheight=0.05)
-        tk.Label(root, bg='#C6C6C6').place(relx=0.2, rely=0.78, relwidth=0.78, relheight=0.2) 
+        left_down = tk.Label(root, text = '').place(relx=0.02, rely=0.891, relwidth=0.16, relheight=0.05)
+        right_down = tk.Label(root, bg='#C6C6C6').place(relx=0.2, rely=0.78, relwidth=0.78, relheight=0.2) 
 
 def B1f():
     '''
     show processing data
     '''  
     if absolute_file_path is None:
-        tk.Label(root, text = 'load another file').place(relx=0.02, rely=0.85, relwidth=0.16, relheight=0.05)
+        tk.Label(root, text = 'load another file').place(relx=0.02, rely=0.891, relwidth=0.16, relheight=0.05)
         tk.Label(root, bg='#C6C6C6').place(relx=0.2, rely=0.78, relwidth=0.78, relheight=0.2) 
         open_popup1()
     try:
@@ -626,7 +622,7 @@ def B1f():
         if judgment_format(file_name) is None:
             open_popup3(file_name)
         else:
-            tk.Label(root, text = 'load another file').place(relx=0.02, rely=0.85, relwidth=0.16, relheight=0.05)
+            tk.Label(root, text = 'load another file').place(relx=0.02, rely=0.891, relwidth=0.16, relheight=0.05)
             tk.Label(root, bg='#C6C6C6').place(relx=0.2, rely=0.78, relwidth=0.78, relheight=0.2) 
             open_popup2(file_name)  
 
@@ -635,7 +631,7 @@ def B2f():
     show gradient and peaks.
     '''
     if absolute_file_path is None:
-        tk.Label(root, text = 'load another file').place(relx=0.02, rely=0.85, relwidth=0.16, relheight=0.05)
+        tk.Label(root, text = 'load another file').place(relx=0.02, rely=0.891, relwidth=0.16, relheight=0.05)
         tk.Label(root, bg='#C6C6C6').place(relx=0.2, rely=0.78, relwidth=0.78, relheight=0.2) 
         open_popup1()
     try:
@@ -653,7 +649,7 @@ def B2f():
         if judgment_format(file_name) is None:
             open_popup3(file_name)
         else:
-            tk.Label(root, text = 'load another file').place(relx=0.02, rely=0.85, relwidth=0.16, relheight=0.05)
+            tk.Label(root, text = 'load another file').place(relx=0.02, rely=0.891, relwidth=0.16, relheight=0.05)
             tk.Label(root, bg='#C6C6C6').place(relx=0.2, rely=0.78, relwidth=0.78, relheight=0.2) 
             open_popup2(file_name)  
 
@@ -705,9 +701,6 @@ def B3f():
         spot_size_Avg = round( sum(all_spots) / len(all_spots), 2)
         spot_size_StD = round( np.std(all_spots), 2)
         N = len(all_spots)
-
-        # r = tk.Label(root, bg='#C6C6C6', fg='#000000', font=("Arial", 15),
-        #     text = f'file name: {file_name}').place(relx=0.2, rely=0.78, relwidth=0.78, relheight=0.2)
         
 
         var0 ,var1, var2, var3, var4, var5, var6 = tk.StringVar(), tk.StringVar(), tk.StringVar(), tk.StringVar(), tk.StringVar(), tk.StringVar(), tk.StringVar()
@@ -739,10 +732,10 @@ def B3f():
             la4 = tk.Label(root, textvariable=var4, bg='#F0F0F0', fg='#BA1515', font=("Arial", 18), relief="ridge").place(relx=0.32, rely=0.9)
             var4.set(f'{spot_size_Avg} ± {spot_size_StD}')
 
-            la5 = tk.Label(root, textvariable=var5, bg='#C6C6C6', fg='#000000', font=("Arial", 18)).place(relx=0.37, rely=0.85)
+            la5 = tk.Label(root, textvariable=var5, bg='#C6C6C6', fg='#000000', font=("Arial", 18)).place(relx=0.488, rely=0.85)
             var5.set("um/s")
 
-            la6 = tk.Label(root, textvariable=var6, bg='#C6C6C6', fg='#000000', font=("Arial", 18)).place(relx=0.392, rely=0.9)
+            la6 = tk.Label(root, textvariable=var6, bg='#C6C6C6', fg='#000000', font=("Arial", 18)).place(relx=0.488, rely=0.9)
             var6.set("um^2")
 
         elif platform.system() == 'Windows':
@@ -761,24 +754,17 @@ def B3f():
             la4 = tk.Label(root, textvariable=var4, bg='#F0F0F0', fg='#BA1515', font=("Arial", 18), relief="ridge").place(relx=0.34, rely=0.9)
             var4.set(f'{spot_size_Avg} ± {spot_size_StD}')
 
-            la5 = tk.Label(root, textvariable=var5, bg='#C6C6C6', fg='#000000', font=("Arial", 18)).place(relx=0.4, rely=0.85)
+            la5 = tk.Label(root, textvariable=var5, bg='#C6C6C6', fg='#000000', font=("Arial", 18)).place(relx=0.522, rely=0.85)
             var5.set("um/s")
 
-            la6 = tk.Label(root, textvariable=var6, bg='#C6C6C6', fg='#000000', font=("Arial", 18)).place(relx=0.49, rely=0.9)
+            la6 = tk.Label(root, textvariable=var6, bg='#C6C6C6', fg='#000000', font=("Arial", 18)).place(relx=0.522, rely=0.9)
             var6.set("um^2")
 
     # elif k_parameters == None:
         # r.place(relx=0.2, rely=0.78, relwidth=0.78, relheight=0.2)
 
-# def B4f():
-#     # cls
-
-#     ax.clear()
-#     ax.axis('off')
-#     line.draw() 
-
-#     tk.Label(root, text = '').place(relx=0.02, rely=0.85, relwidth=0.16, relheight=0.05)
-#     tk.Label(root, bg='#C6C6C6').place(relx=0.2, rely=0.78, relwidth=0.78, relheight=0.2) 
+    # elif k_parameters == None:
+        # r.place(relx=0.2, rely=0.78, relwidth=0.78, relheight=0.2)
 
 def B4f():
     list_of_file, folder_path = r_all_file()
@@ -791,10 +777,13 @@ def B4f():
     else:
         plt_all(list_of_file, folder_path)
 
-
 def B5f():
+    pass
+
+
+def B6f():
     # cls first
-    tk.Label(root, text = '').place(relx=0.02, rely=0.85, relwidth=0.16, relheight=0.05)
+    tk.Label(root, text = '').place(relx=0.02, rely=0.891, relwidth=0.16, relheight=0.05)
     tk.Label(root, bg='#C6C6C6').place(relx=0.2, rely=0.78, relwidth=0.78, relheight=0.2) 
 
     spot_dependence_on_z, proplem_list = main()
@@ -865,64 +854,54 @@ root = tk.Tk()
 root.geometry('900x600')
 root.title("Error Func Fitting")
 #------------
+# Image:
+root.photo1 = ImageTk.PhotoImage(Image.open('load_file.jpg'))
+root.photo2 = ImageTk.PhotoImage(Image.open('error_func.jpg'))
+root.photo3 = ImageTk.PhotoImage(Image.open('Gauss.jpg'))
 
-#-- Frames 框架 ---
-# Im_load_file = tk.PhotoImage(file='/Users/k.y.chen/Documents/Coding_all/NYCU/load_file.jpeg')
-root.photo = ImageTk.PhotoImage(Image.open('load_file.jpg'))
 
-# '''
-# Frame:
-#     bd    : 指標周圍邊框的大小
-#     height: The vertical dimension of the new frame.
-# place:
-#     Place 是幾何管理器是 Tkinter 中提供的三個通用幾何管理器中最簡單的一個。
-#     它允許您明確設置窗口的位置和大小，無論是絕對值還是相對於另一個窗口。
-#     relheight, relwidth: 高度和寬度作為 0.0 和 1.0 之間的浮點數
-#     relx, rely: 水平和垂直偏移量作為 0.0 和 1.0 之間的浮點數，作為父部件高度和寬度的一部分。
-# '''
+#----------------- #
+#-- Frames 框架 --- #
 
 left_frame = tk.Frame(root)
-left_frame.place(relx=0.02, rely=0.02, relwidth=0.16, relheight=0.74)
+left_frame.place(relx=0.02, rely=0.02, relwidth=0.16, relheight=0.832)
 
 right_frame = tk.Frame(root, bg='#C0C0C0') 
-right_frame.place(relx=0.2, rely=0.02, relwidth=0.78, relheight=0.72)
+right_frame.place(relx=0.2, rely=0.02, relwidth=0.82, relheight=0.72)
 
-# ld_frame = tk.Frame(root, bg='#FFEBA4')
-# ld_frame.place(relx=0.02, rely=0.59, relwidth=0.16, relheight=0.39)
+left_down = tk.Label(root, fg='#FF0000', font=("Arial", 15), text = f'Plz load data first!')
+left_down.place(relx=0.02, rely=0.891, relwidth=0.16, relheight=0.05)
 
-l = tk.Label(root, fg='#FF0000', font=("Arial", 15),
-            text = f'Plz load data first!')
-l.place(relx=0.02, rely=0.85, relwidth=0.16, relheight=0.05)
-
-r = tk.Label(root, bg='#C6C6C6', fg='#000000', font=("Arial", 15))
-r.place(relx=0.2, rely=0.78, relwidth=0.78, relheight=0.2)
-
-# rd_frame = tk.Frame(root, bg='#C6C6C6')
-# rd_frame.place(relx=0.2, rely=0.78, relwidth=0.78, relheight=0.2)
-# tk.Label
+right_down = tk.Label(root, bg='#C6C6C6', fg='#000000', font=("Arial", 15))
+right_down.place(relx=0.2, rely=0.78, relwidth=0.78, relheight=0.2)
 
 #---------------
 
 #--- Botones ---
-RH = 0.13
+RH = 0.13 # 按鈕的高度
+BU_h = 0.322
 
-B0 = tk.Button(left_frame,text='Load data' + '\n' 'and Show',command = B0f, relief="raised", image=root.photo)
+B0 = tk.Button(left_frame,text='Load data' + '\n' 'and Show',command = B0f, relief="raised", image=root.photo1)
 B0.place(relheight=RH, relwidth=1)
 
 B1 = tk.Button(left_frame,text="Remove noise",command = B1f)
-B1.place(rely=(0.1 + RH*0.392) ,relheight=RH, relwidth=1)
+B1.place(rely=(0.1 + RH*BU_h) ,relheight=RH, relwidth=1)
 
 B2 = tk.Button(left_frame,text="Gradient",command = B2f)
-B2.place(rely= 2*(0.1 + RH*0.392) ,relheight=RH, relwidth=1)
+B2.place(rely= 2*(0.1 + RH*BU_h) ,relheight=RH, relwidth=1)
 
-B3 = tk.Button(left_frame,text="Fit Error func",command = B3f)
-B3.place(rely= 3*(0.1 + RH*0.392) ,relheight=RH, relwidth=1)
+B3 = tk.Button(left_frame,text="Fit Error func",command = B3f, image=root.photo2)
+B3.place(rely= 3*(0.1 + RH*BU_h) ,relheight=RH, relwidth=1)
 
-B4 = tk.Button(left_frame, text="Plt all",command = B4f, relief="sunken")
-B4.place(rely= 4*(0.1 + RH*0.392) ,relheight=RH, relwidth=1)
+B4 = tk.Button(left_frame, text="Fit Gauss",command = B4f, image=root.photo3)
+B4.place(rely= 4*(0.1 + RH*BU_h) ,relheight=RH, relwidth=1)
+# , image=root.photo2)
 
-B5 = tk.Button(left_frame, text="Dependence\nof A on z",command = B5f, relief="groove")
-B5.place(rely= 5*(0.1 + RH*0.392) ,relheight=RH, relwidth=1)
+B4 = tk.Button(left_frame, text="Plt all",command = B5f, relief="sunken")
+B4.place(rely= 5*(0.1 + RH*BU_h) ,relheight=RH, relwidth=1)
+
+B5 = tk.Button(left_frame, text="Dependence\nof A on z",command = B6f, relief="groove")
+B5.place(rely= 6*(0.1 + RH*BU_h) ,relheight=RH, relwidth=1)
 #------------
 
 #--- Agregar figura ---
