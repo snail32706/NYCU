@@ -12,6 +12,7 @@ from scipy.special import erf
 from scipy.optimize import curve_fit
 from scipy.signal import find_peaks
 import math
+from PIL import Image, ImageTk
 
 
 # ------ --------- ------ #
@@ -130,9 +131,9 @@ def myerf(x, a, k, x0, y0):
     
     return a * erf(k * (x - x0)) + y0
 
-def plt_xy(x, y, A, axis=None):
-    fig = plt.figure(figsize=(6, 4), dpi=100)
-    ax1 = fig.add_subplot(111)
+    def plt_xy(x, y, A, axis=None):
+            fig = plt.figure(figsize=(6, 4), dpi=100)
+            ax1 = fig.add_subplot(111)
 
     if axis is not None:
         ax1.set_xlabel("time (s)")
@@ -486,45 +487,45 @@ def main():
 
     return spot_dependence_on_z, proplem_list
 
-def plt_all(list_of_file, folder_path):
-    
-    # plt start:
-    fig_N = len(list_of_file)
-    row = math.ceil(fig_N/7) if math.ceil(fig_N/7) != 0 else 1
-    fig, axes = plt.subplots(row, 7, figsize=(18, 2*row), dpi=100)
-    fig.subplots_adjust(hspace = .15, wspace = .6)  # 
-    axes = axes.ravel()
-    c = ['#B22222', '#CD9B1D', '#FF7D40', '#FFC125', '#FF3030', '#FFC125', 
-        '#B22222', '#CD9B1D', '#FF7D40', '#FFC125', '#FF3030', '#FFC125']
+    def plt_all(list_of_file, folder_path):
+        
+        # plt start:
+        fig_N = len(list_of_file)
+        row = math.ceil(fig_N/7) if math.ceil(fig_N/7) != 0 else 1
+        fig, axes = plt.subplots(row, 7, figsize=(18, 2*row), dpi=100)
+        fig.subplots_adjust(hspace = .15, wspace = .6)  # 
+        axes = axes.ravel()
+        c = ['#B22222', '#CD9B1D', '#FF7D40', '#FFC125', '#FF3030', '#FFC125', 
+            '#B22222', '#CD9B1D', '#FF7D40', '#FFC125', '#FF3030', '#FFC125']
 
-    for K, file_name in enumerate(list_of_file):
-        absolute_file_path = f'{folder_path}/{file_name}' # 絕對路徑
+        for K, file_name in enumerate(list_of_file):
+            absolute_file_path = f'{folder_path}/{file_name}' # 絕對路徑
 
-        Name_i, Name_f = file_name[ :int(len(file_name)/2)], file_name[int(len(file_name)/2): ]
-        axes[K].set_title(f'{Name_i}\n{Name_f}', fontsize=8)
-        try: 
-            file_name, speed, z_int, xdat_row, ydat_row, x_dat, y_dat, avg_x_byN, del_y_byN, mid_ofx, xpeaks, D_1, D_2 = FAS(absolute_file_path, plt_all='y')
-            k_parameters   = append_all_k(D_1, D_2, mid_ofx, find_midy(x_dat, y_dat))
-            axes[K].axis('off')
-            # axes[K].set_title(f'{file_name}', fontsize=8)
-            axes[K].plot(xdat_row, ydat_row, 'k.',markersize = 0.5)
-            axes[K].plot(x_dat, y_dat, 'k.',markersize = 2)
-            if len(mid_ofx) == 1:
-                    p = fit_error(x_dat, y_dat, mid_ofx[0], find_midy(x_dat, y_dat))
-                    a, k, x0, y0 = p[0], p[1], p[2], p[3]
-                    axes[K].plot(x_dat, myerf(x_dat, a, k, x0, y0), color=c[0], linewidth=8, alpha=0.5)
-                    # plt.show()
-            else:
-                for i, val in enumerate(mid_ofx):
-                    p = fit_error(D_1[i], D_2[i], val, find_midy(x_dat, y_dat))
-                    a, k, x0, y0 = p[0], p[1], p[2], p[3]
-                    axes[K].plot(D_1[i], myerf(D_1[i], a, k, x0, y0), color=c[i] , linewidth=8, alpha=0.5)
-        except:
-            file_name, xdat_row, ydat_row,= FAS(absolute_file_path, get_row_data='yes', plt_all='y')
-            axes[K].plot(xdat_row, ydat_row, 'b.',markersize = 2)
-            axes[K].axis('off')
+            Name_i, Name_f = file_name[ :int(len(file_name)/2)], file_name[int(len(file_name)/2): ]
+            axes[K].set_title(f'{Name_i}\n{Name_f}', fontsize=8)
+            try: 
+                file_name, speed, z_int, xdat_row, ydat_row, x_dat, y_dat, avg_x_byN, del_y_byN, mid_ofx, xpeaks, D_1, D_2 = FAS(absolute_file_path, plt_all='y')
+                k_parameters   = append_all_k(D_1, D_2, mid_ofx, find_midy(x_dat, y_dat))
+                axes[K].axis('off')
+                # axes[K].set_title(f'{file_name}', fontsize=8)
+                axes[K].plot(xdat_row, ydat_row, 'k.',markersize = 0.5)
+                axes[K].plot(x_dat, y_dat, 'k.',markersize = 2)
+                if len(mid_ofx) == 1:
+                        p = fit_error(x_dat, y_dat, mid_ofx[0], find_midy(x_dat, y_dat))
+                        a, k, x0, y0 = p[0], p[1], p[2], p[3]
+                        axes[K].plot(x_dat, myerf(x_dat, a, k, x0, y0), color=c[0], linewidth=8, alpha=0.5)
+                        # plt.show()
+                else:
+                    for i, val in enumerate(mid_ofx):
+                        p = fit_error(D_1[i], D_2[i], val, find_midy(x_dat, y_dat))
+                        a, k, x0, y0 = p[0], p[1], p[2], p[3]
+                        axes[K].plot(D_1[i], myerf(D_1[i], a, k, x0, y0), color=c[i] , linewidth=8, alpha=0.5)
+            except:
+                file_name, xdat_row, ydat_row,= FAS(absolute_file_path, get_row_data='yes', plt_all='y')
+                axes[K].plot(xdat_row, ydat_row, 'b.',markersize = 2)
+                axes[K].axis('off')
 
-    plt.show()
+        plt.show()
 
 
 def FAS(file, get_row_data=None, plt_all=None):
@@ -564,7 +565,7 @@ def FAS(file, get_row_data=None, plt_all=None):
 # ------ ------------ ------ # 
 # ------ tkinter func ------ # 
 
-# x_new_G, y_new_G = None, None
+x_new_G, y_new_G = None, None
 absolute_file_path = None # 唯一 global variable
 
 def B0f():
@@ -671,9 +672,9 @@ def B3f():
         k_parameters   = append_all_k(D_1, D_2, mid_ofx, find_midy(x_dat, y_dat))
         spot_size_list = calculate_spot_size(k_parameters, speed)
 
-
         ax.clear()
-        ax.plot(x_dat, y_dat, 'b.',markersize = 5)
+        # ax.plot(x_dat, y_dat, 'b.',markersize = 5)
+        ax.scatter(xdat, ydat, s=100, facecolors='none', edgecolors='k')
         ax.set_xlabel("time (s)")
         ax.set_ylabel("signal (a.u.)")
         ax.set_title("fit: a * erf(k * (x - x0)) + y0")
@@ -682,7 +683,8 @@ def B3f():
         if len(mid_ofx) == 1:
                 p = fit_error(x_dat, y_dat, mid_ofx[0], find_midy(x_dat, y_dat))
                 a, k, x0, y0 = p[0], p[1], p[2], p[3]
-                ax.plot(x_dat, myerf(x_dat, a, k, x0, y0), color=c[0], linewidth=8, alpha=0.5)
+                # ax.plot(x_dat, myerf(x_dat, a, k, x0, y0), color=c[0], linewidth=8, alpha=0.5)
+                ax.plot(x_dat, myerf(x_dat, a, k, x0, y0), color='r', linewidth=10, alpha=0.5)
         else:    
             for i, val in enumerate(mid_ofx):
                 p = fit_error(D_1[i], D_2[i], val, find_midy(x_dat, y_dat))
@@ -741,7 +743,7 @@ def B3f():
             la5 = tk.Label(root, textvariable=var5, bg='#C6C6C6', fg='#000000', font=("Arial", 18)).place(relx=0.37, rely=0.85)
             var5.set("um/s")
 
-            la6 = tk.Label(root, textvariable=var6, bg='#C6C6C6', fg='#000000', font=("Arial", 18)).place(relx=0.44, rely=0.9)
+            la6 = tk.Label(root, textvariable=var6, bg='#C6C6C6', fg='#000000', font=("Arial", 18)).place(relx=0.392, rely=0.9)
             var6.set("um^2")
 
         elif platform.system() == 'Windows':
@@ -866,17 +868,19 @@ root.title("Error Func Fitting")
 #------------
 
 #-- Frames 框架 ---
+# Im_load_file = tk.PhotoImage(file='/Users/k.y.chen/Documents/Coding_all/NYCU/load_file.jpeg')
+root.photo = ImageTk.PhotoImage(Image.open('load_file.jpg'))
 
-'''
-Frame:
-    bd    : 指標周圍邊框的大小
-    height: The vertical dimension of the new frame.
-place:
-    Place 是幾何管理器是 Tkinter 中提供的三個通用幾何管理器中最簡單的一個。
-    它允許您明確設置窗口的位置和大小，無論是絕對值還是相對於另一個窗口。
-    relheight, relwidth: 高度和寬度作為 0.0 和 1.0 之間的浮點數
-    relx, rely: 水平和垂直偏移量作為 0.0 和 1.0 之間的浮點數，作為父部件高度和寬度的一部分。
-'''
+# '''
+# Frame:
+#     bd    : 指標周圍邊框的大小
+#     height: The vertical dimension of the new frame.
+# place:
+#     Place 是幾何管理器是 Tkinter 中提供的三個通用幾何管理器中最簡單的一個。
+#     它允許您明確設置窗口的位置和大小，無論是絕對值還是相對於另一個窗口。
+#     relheight, relwidth: 高度和寬度作為 0.0 和 1.0 之間的浮點數
+#     relx, rely: 水平和垂直偏移量作為 0.0 和 1.0 之間的浮點數，作為父部件高度和寬度的一部分。
+# '''
 
 left_frame = tk.Frame(root)
 left_frame.place(relx=0.02, rely=0.02, relwidth=0.16, relheight=0.74)
@@ -901,25 +905,25 @@ r.place(relx=0.2, rely=0.78, relwidth=0.78, relheight=0.2)
 #---------------
 
 #--- Botones ---
-RH = 0.15
+RH = 0.13
 
-B0 = tk.Button(left_frame,text='Load data' + '\n' 'and Show',command = B0f)
+B0 = tk.Button(left_frame,text='Load data' + '\n' 'and Show',command = B0f, relief="raised", image=root.photo)
 B0.place(relheight=RH, relwidth=1)
 
 B1 = tk.Button(left_frame,text="Remove noise",command = B1f)
-B1.place(rely=(0.1 + RH*0.44) ,relheight=RH, relwidth=1)
+B1.place(rely=(0.1 + RH*0.392) ,relheight=RH, relwidth=1)
 
 B2 = tk.Button(left_frame,text="Gradient",command = B2f)
-B2.place(rely= 2*(0.1 + RH*0.44) ,relheight=RH, relwidth=1)
+B2.place(rely= 2*(0.1 + RH*0.392) ,relheight=RH, relwidth=1)
 
 B3 = tk.Button(left_frame,text="Fit Error func",command = B3f)
-B3.place(rely= 3*(0.1 + RH*0.44) ,relheight=RH, relwidth=1)
+B3.place(rely= 3*(0.1 + RH*0.392) ,relheight=RH, relwidth=1)
 
-B4 = tk.Button(left_frame, text="Plt all",command = B4f)
-B4.place(rely= 4*(0.1 + RH*0.44) ,relheight=RH, relwidth=1)
+B4 = tk.Button(left_frame, text="Plt all",command = B4f, relief="sunken")
+B4.place(rely= 4*(0.1 + RH*0.392) ,relheight=RH, relwidth=1)
 
-B5 = tk.Button(left_frame, text="Dependence\nof A on z",command = B5f)
-B5.place(rely= 5*(0.1 + RH*0.44) ,relheight=RH, relwidth=1)
+B5 = tk.Button(left_frame, text="Dependence\nof A on z",command = B5f, relief="groove")
+B5.place(rely= 5*(0.1 + RH*0.392) ,relheight=RH, relwidth=1)
 #------------
 
 #--- Agregar figura ---
@@ -929,5 +933,5 @@ ax.grid(True),ax.set_xlabel('$x$'),ax.set_ylabel('$y(x)$')
 line = FigureCanvasTkAgg(figure, right_frame)
 line.get_tk_widget().pack(side=tk.LEFT, fill=tk.BOTH,expand=1)
 #----------------------
-B0f()
+# B0f()
 root.mainloop()
