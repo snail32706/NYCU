@@ -197,7 +197,7 @@ def fit_gauss(xdat, ydat, normalized=None):
         ratio_x0 = params_first[0]/pick_x if params_first[0]/pick_x > 1 else pick_x/params_first[0]
         Del_A = abs(pick_y - params_first[3])
         ratio_A = abs(params_first[2]/Del_A) if abs(params_first[2]/Del_A) > 1 else abs(Del_A/params_first[2])
-        if ratio_x0 < 1.1 and ratio_A < 1.3:
+        if ratio_x0 < 1.2 and ratio_A < 1.4:      # 可能會出錯的點
             break        
         sigma = sigma * 5
     
@@ -539,7 +539,7 @@ def FAS(file, get_row_data=None, plt_all=None):
     file : put absolute path
     analysis and split
     '''
-    file_name       = absolute_to_relative(file)
+    file_name               = absolute_to_relative(file)
     xdat_row, ydat_row      = read_file(file)
     
     if plt_all is None:
@@ -632,7 +632,7 @@ def B1f():
             else:
                 tk.Label(root, font=("Arial", 15), text = 'load another file').place(relx=0.02, rely=0.891, relwidth=0.16, relheight=0.05)
                 tk.Label(root, bg='#C6C6C6').place(relx=0.2, rely=0.78, relwidth=0.78, relheight=0.2) 
-                open_popup2(file_name)  
+                open_popup2(file_name)
 
 def B2f():
     '''
@@ -797,7 +797,7 @@ def B4f(): # Gauss
         line.draw()  
         FWHM = abs(gauss_parameter[1])*2 * np.sqrt(np.log(4))
         r = tk.Label(root, bg='#C6C6C6').place(relx=0.2, rely=0.78, relwidth=0.78, relheight=0.2)  # cls
-        r = tk.Label(root, bg='#C6C6C6', fg='#000000', font=("Arial", 18), text = f'FWHM = {np.around(FWHM,2)} μm', relief="ridge").place(relx=0.2, rely=0.78, relwidth=0.78, relheight=0.2)
+        r = tk.Label(root, bg='#C6C6C6', fg='#000000', font=("Arial", 18), text = f'{file_name}\nFWHM = {np.around(FWHM,2)} μm', relief="ridge").place(relx=0.2, rely=0.78, relwidth=0.78, relheight=0.2)
 
 def B5f(): # plt all folder .txt
 
@@ -806,7 +806,7 @@ def B5f(): # plt all folder .txt
         top = tk.Toplevel(root)
         top.geometry("500x250")
         top.title("File Name Error!")
-        word = f'File Name Error!\nfile name should be: s100_z10_...'
+        word = f'File Name Error!\nfile name should be: s100_z10_.filename.txt'
         tk.Label(top, fg='#FF0000', text= word , font=('Mistral 18 bold')).place(x=250,y=125, anchor="center")
     else:
         plt_all(list_of_file, folder_path)
@@ -877,7 +877,7 @@ def open_popup3(file_name):
    top = tk.Toplevel(root)
    top.geometry("500x250")
    top.title("Name Error!")
-   word = f'{file_name}\nName Error!'
+   word = f'{file_name}\nName Error!\nfile name should be: s100_z10_.filename.txt'
    tk.Label(top, fg='#FF0000', text= word , font=('Mistral 18 bold')).place(x=250,y=125, anchor="center")
 
 #--- Raiz ---
